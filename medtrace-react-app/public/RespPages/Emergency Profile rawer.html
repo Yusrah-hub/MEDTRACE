@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedTrace - Emergency Profile Drawer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #000000;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* iPhone Device Container */
+    .phone-mockup {
+      width: 375px;
+      height: 760px;
+      background-color: #f8fafc;
+      border: 4px solid #4a4d52;
+      border-radius: 48px;
+      position: relative;
+      box-shadow: inset 0 0 0 2px #1f2124, 0 0 30px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+    }
+
+    /* Top Camera Notch */
+    .notch {
+      width: 130px;
+      height: 26px;
+      background-color: #000000;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      z-index: 30;
+    }
+
+    /* Screen Layout Area */
+    .screen-layout {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background-color: #f8fafc;
+      overflow: hidden;
+    }
+
+    /* Navigation Drawer Sidebar */
+    .sidebar-drawer {
+      width: 70%;
+      height: 100%;
+      background-color: #ffffff;
+      padding: 64px 0 0 0;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-section {
+      padding: 0 24px;
+    }
+
+    .brand-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #0b1f3a;
+      letter-spacing: -0.5px;
+      margin-bottom: 24px;
+    }
+
+    .brand-divider {
+      width: 100%;
+      height: 1px;
+      background-color: #cbd5e1;
+      margin-bottom: 28px;
+    }
+
+    /* Menu Item Styling */
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-left: 24px;
+      color: #64748b;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-decoration: none;
+      position: relative;
+      cursor: pointer;
+    }
+
+    /* Selected Item State: Emergency Profile */
+    .nav-item.active {
+      color: #0b1f3a;
+      font-weight: 700;
+    }
+
+    /* Blue Indicator Bar on Left Edge */
+    .active-indicator-pill {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 5px;
+      height: 28px;
+      background-color: #2563eb;
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+
+    .nav-icon {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      flex-shrink: 0;
+    }
+
+    /* Peeking Main Content Screen on the Right */
+    .main-content-peek {
+      position: absolute;
+      top: 0;
+      left: 68%;
+      width: 100%;
+      height: 100%;
+      background-color: #f8fafc;
+      padding: 64px 16px 20px 16px;
+      z-index: 5;
+    }
+
+    .peek-header {
+      margin-bottom: 20px;
+    }
+
+    .peek-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #0b1f3a;
+      white-space: nowrap;
+    }
+
+    .peek-subtitle {
+      font-size: 0.65rem;
+      color: #94a3b8;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+
+    /* White Background Content Cards */
+    .peek-card {
+      width: 100%;
+      background-color: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .card-icon-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    /* Bottom Home Bar Indicator */
+    .home-indicator {
+      width: 125px;
+      height: 4px;
+      background-color: #000000;
+      border-radius: 2px;
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+    }
+  
+    /* Full web app layout: reuse each original screen design without a device frame. */
+    html { min-height: 100%; }
+    body {
+      display: block;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 0;
+      background: #f4f7fb;
+      align-items: initial;
+      justify-content: initial;
+    }
+    .phone-mockup {
+      width: 100%;
+      max-width: 1440px;
+      height: auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0 auto;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      overflow: visible;
+      position: relative;
+    }
+    .notch, .status-bar, .home-indicator { display: none !important; }
+    .app-content {
+      width: 100%;
+      min-height: calc(100vh - 64px);
+      min-height: calc(100dvh - 64px);
+      height: auto;
+      flex: 1 0 auto;
+      overflow: visible;
+      padding: clamp(24px, 4vw, 56px) clamp(20px, 6vw, 88px) 32px;
+      overscroll-behavior: auto;
+    }
+    .navbar {
+      position: sticky;
+      bottom: 0;
+      z-index: 20;
+      width: 100%;
+      min-height: 64px;
+      height: auto;
+      padding: 12px 20px;
+      border-top: 1px solid #e5eaf1;
+      background: #ffffff;
+    }
+    img, svg, video, canvas { max-width: 100%; }
+    input, select, textarea, button { max-width: 100%; }
+    @media (min-width: 900px) {
+      .app-content { padding-left: clamp(48px, 8vw, 112px); padding-right: clamp(48px, 8vw, 112px); }
+    }
+    /* DESKTOP-FIT-RULES */
+    @media (min-width: 900px) {
+      .app-content {
+        min-height: calc(100vh - 136px);
+        min-height: calc(100dvh - 136px);
+        padding-left: clamp(48px, 7vw, 112px);
+        padding-right: clamp(48px, 7vw, 112px);
+      }
+      .page-title, .app-title, .form-title, .main-heading, .heading-text {
+        font-size: clamp(1.75rem, 2.5vw, 2.5rem);
+        line-height: 1.2;
+      }
+      .sub-heading, .sub-text, .page-subtitle, .welcome-subtitle, .card-subtitle {
+        font-size: clamp(1rem, 1.25vw, 1.2rem);
+        line-height: 1.5;
+      }
+      .form-card, .login-card, .info-card, .patient-card, .details-card, .hospital-card, .qr-card, .emergency-card, .form-card, .profile-card {
+        width: min(100%, 760px);
+        margin-left: auto;
+        margin-right: auto;
+        padding: clamp(24px, 3vw, 40px);
+      }
+      .form-label, .checkbox-label, .detail-label, .info-label, .record-title, .section-title, .card-title {
+        font-size: clamp(1rem, 1.2vw, 1.15rem);
+      }
+      .form-input, .form-select, .dropdown-select, .otp-box {
+        min-height: 48px;
+        font-size: clamp(1rem, 1.15vw, 1.1rem);
+      }
+      button, .btn-primary, .btn-secondary, .btn-login, .btn-submit, .btn-verify, .btn-continue, .btn-done, .btn-request, .btn-send, .btn-approve, .btn-reject, .btn-dashboard, .btn-view-profile, .btn-share, .btn-create-account {
+        min-height: 50px;
+        font-size: clamp(1rem, 1.15vw, 1.1rem);
+      }
+      .screen-layout {
+        width: min(100%, 1440px);
+        min-height: calc(100vh - 64px);
+        min-height: calc(100dvh - 64px);
+        margin: 0 auto;
+      }
+      .sidebar-drawer { font-size: clamp(1rem, 1.1vw, 1.15rem); }
+      .peek-card, .peek-card-top, .peek-card-bottom { font-size: clamp(1rem, 1.1vw, 1.15rem); }
+      .navbar, .bottom-nav { min-height: 72px; }
+      .nav-item { width: 48px; height: 48px; }
+      .nav-item svg { width: 22px; height: 22px; }
+    }
+    @media (max-width: 700px) {
+      body { background: #ffffff; }
+      .phone-mockup { max-width: none; min-height: 100dvh; }
+      .app-content { min-height: calc(100dvh - 56px); padding: 22px 16px 24px; }
+      .navbar { position: sticky; min-height: 56px; padding: 10px 12px; }
+      .horizontal-scroll, .quick-access-grid { flex-wrap: wrap; }
+      .horizontal-scroll { overflow-x: visible; }
+      .profile-card { flex: 1 1 82px; }
+    }
+    @media (max-width: 380px) {
+      .app-content { padding-left: 12px; padding-right: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="phone-mockup">
+    <!-- Camera Notch -->
+    <div class="notch"></div>
+
+    <div class="screen-layout">
+      <!-- Navigation Drawer -->
+      <aside class="sidebar-drawer">
+        <div class="brand-section">
+          <h1 class="brand-title">MedTrace</h1>
+          <div class="brand-divider"></div>
+        </div>
+
+        <ul class="nav-list">
+          <li>
+            <a class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
+              <span>Medical Profile</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <span>My QR Code</span>
+            </a>
+          </li>
+          <li>
+            <!-- Active Selected Item: Emergency Profile -->
+            <a class="nav-item active">
+              <div class="active-indicator-pill"></div>
+              <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              <span>Emergency Profile</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item">
+              <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Access History</span>
+            </a>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- Peeking Emergency Screen Content -->
+      <main class="main-content-peek">
+        <div class="peek-header">
+          <div class="peek-title">Emer</div>
+          <div class="peek-subtitle">Critical in</div>
+        </div>
+
+        <!-- Top Peek Card -->
+        <div class="peek-card" style="height: 120px;"></div>
+
+        <!-- Middle Card: Heart Icon & Red Dot -->
+        <div class="peek-card" style="height: 180px;">
+          <div class="card-icon-column">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.72-8.72 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              <line x1="12" y1="10" x2="12" y2="16"/>
+              <line x1="9" y1="13" x2="15" y2="13"/>
+            </svg>
+            <svg viewBox="0 0 24 24" width="6" height="6" fill="#ef4444">
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Bottom Card: Emergency Kit Icon & Dot -->
+        <div class="peek-card" style="height: 120px;">
+          <div class="card-icon-column">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0b1f3a" stroke-width="2">
+              <rect x="2" y="7" width="20" height="14" rx="2"/>
+              <path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/>
+              <line x1="12" y1="11" x2="12" y2="17"/>
+              <line x1="9" y1="14" x2="15" y2="14"/>
+            </svg>
+            <svg viewBox="0 0 24 24" width="6" height="6" fill="#0b1f3a">
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Home Bar Indicator -->
+    <div class="home-indicator"></div>
+  </div>
+
+  <script src="medtrace-navigation.js"></script>
+</body>
+</html>

@@ -60,7 +60,7 @@ function App() {
           Secure Supply Chain & Verification System
         </p>
 
-        <a href="/Med/1medtrace.html" style={styles.button}>
+        <a href="/medtracer/MEDTRACE1.HTML" style={styles.button}>
           <span style={styles.buttonIcon}>✚</span>
           Enter Application
         </a>

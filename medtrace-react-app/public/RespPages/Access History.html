@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedTrace - Access History</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #000000;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* iPhone Frame */
+    .phone-mockup {
+      width: 375px;
+      height: 760px;
+      background-color: #ffffff;
+      border: 4px solid #4a4d52;
+      border-radius: 48px;
+      position: relative;
+      box-shadow: inset 0 0 0 2px #1f2124, 0 0 30px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Notch */
+    .notch {
+      width: 130px;
+      height: 26px;
+      background-color: #000000;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      z-index: 10;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height: 44px;
+      padding: 12px 28px 0 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #000000;
+      z-index: 5;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .icon-signal { width: 14px; height: 10px; fill: #000000; }
+    .icon-wifi { width: 13px; height: 10px; fill: #000000; }
+    .icon-battery {
+      width: 20px;
+      height: 10px;
+      border: 1px solid #000000;
+      border-radius: 3px;
+      padding: 1px;
+      position: relative;
+    }
+    .icon-battery::after {
+      content: '';
+      position: absolute;
+      right: -3px;
+      top: 2px;
+      width: 2px;
+      height: 4px;
+      background: #000000;
+      border-radius: 0 1px 1px 0;
+    }
+    .battery-level {
+      width: 100%;
+      height: 100%;
+      background-color: #000000;
+      border-radius: 1px;
+    }
+
+    /* Content Area */
+    .app-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 20px 0 20px;
+      overflow-y: auto;
+    }
+
+    .app-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Title */
+    .page-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0c2340;
+      margin-bottom: 20px;
+    }
+
+    /* History Entry Wrapper */
+    .history-entry {
+      margin-bottom: 20px;
+    }
+
+    /* Hospital Info Header */
+    .hospital-card {
+      background-color: #0d2847;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+    }
+
+    .info-row svg {
+      width: 16px;
+      height: 16px;
+      stroke: #ffffff;
+      fill: none;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+
+    .info-row span {
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* Details Card */
+    .details-card {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-top: none;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      padding: 14px 16px 10px 16px;
+    }
+
+    .details-title {
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 14px;
+    }
+
+    /* Grid Items */
+    .accessed-grid {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .accessed-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 70px;
+      text-align: center;
+    }
+
+    .item-icon-box {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background-color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .item-icon-box svg {
+      width: 15px;
+      height: 15px;
+      stroke: #0f172a;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .accessed-item span {
+      font-size: 0.62rem;
+      color: #64748b;
+      line-height: 1.2;
+    }
+
+    /* Timestamp Footer */
+    .timestamp {
+      text-align: center;
+      font-size: 0.62rem;
+      color: #94a3b8;
+    }
+
+    /* Home Indicator Notch */
+    .home-indicator {
+      width: 125px;
+      height: 4px;
+      background-color: #000000;
+      border-radius: 2px;
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  
+    /* Full web app layout: reuse each original screen design without a device frame. */
+    html { min-height: 100%; }
+    body {
+      display: block;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 0;
+      background: #f4f7fb;
+      align-items: initial;
+      justify-content: initial;
+    }
+    .phone-mockup {
+      width: 100%;
+      max-width: 1440px;
+      height: auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0 auto;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      overflow: visible;
+      position: relative;
+    }
+    .notch, .status-bar, .home-indicator { display: none !important; }
+    .app-content {
+      width: 100%;
+      min-height: calc(100vh - 64px);
+      min-height: calc(100dvh - 64px);
+      height: auto;
+      flex: 1 0 auto;
+      overflow: visible;
+      padding: clamp(24px, 4vw, 56px) clamp(20px, 6vw, 88px) 32px;
+      overscroll-behavior: auto;
+    }
+    .navbar {
+      position: sticky;
+      bottom: 0;
+      z-index: 20;
+      width: 100%;
+      min-height: 64px;
+      height: auto;
+      padding: 12px 20px;
+      border-top: 1px solid #e5eaf1;
+      background: #ffffff;
+    }
+    img, svg, video, canvas { max-width: 100%; }
+    input, select, textarea, button { max-width: 100%; }
+    @media (min-width: 900px) {
+      .app-content { padding-left: clamp(48px, 8vw, 112px); padding-right: clamp(48px, 8vw, 112px); }
+    }
+    /* DESKTOP-FIT-RULES */
+    @media (min-width: 900px) {
+      .app-content {
+        min-height: calc(100vh - 136px);
+        min-height: calc(100dvh - 136px);
+        padding-left: clamp(48px, 7vw, 112px);
+        padding-right: clamp(48px, 7vw, 112px);
+      }
+      .page-title, .app-title, .form-title, .main-heading, .heading-text {
+        font-size: clamp(1.75rem, 2.5vw, 2.5rem);
+        line-height: 1.2;
+      }
+      .sub-heading, .sub-text, .page-subtitle, .welcome-subtitle, .card-subtitle {
+        font-size: clamp(1rem, 1.25vw, 1.2rem);
+        line-height: 1.5;
+      }
+      .form-card, .login-card, .info-card, .patient-card, .details-card, .hospital-card, .qr-card, .emergency-card, .form-card, .profile-card {
+        width: min(100%, 760px);
+        margin-left: auto;
+        margin-right: auto;
+        padding: clamp(24px, 3vw, 40px);
+      }
+      .form-label, .checkbox-label, .detail-label, .info-label, .record-title, .section-title, .card-title {
+        font-size: clamp(1rem, 1.2vw, 1.15rem);
+      }
+      .form-input, .form-select, .dropdown-select, .otp-box {
+        min-height: 48px;
+        font-size: clamp(1rem, 1.15vw, 1.1rem);
+      }
+      button, .btn-primary, .btn-secondary, .btn-login, .btn-submit, .btn-verify, .btn-continue, .btn-done, .btn-request, .btn-send, .btn-approve, .btn-reject, .btn-dashboard, .btn-view-profile, .btn-share, .btn-create-account {
+        min-height: 50px;
+        font-size: clamp(1rem, 1.15vw, 1.1rem);
+      }
+      .screen-layout {
+        width: min(100%, 1440px);
+        min-height: calc(100vh - 64px);
+        min-height: calc(100dvh - 64px);
+        margin: 0 auto;
+      }
+      .sidebar-drawer { font-size: clamp(1rem, 1.1vw, 1.15rem); }
+      .peek-card, .peek-card-top, .peek-card-bottom { font-size: clamp(1rem, 1.1vw, 1.15rem); }
+      .navbar, .bottom-nav { min-height: 72px; }
+      .nav-item { width: 48px; height: 48px; }
+      .nav-item svg { width: 22px; height: 22px; }
+    }
+    @media (max-width: 700px) {
+      body { background: #ffffff; }
+      .phone-mockup { max-width: none; min-height: 100dvh; }
+      .app-content { min-height: calc(100dvh - 56px); padding: 22px 16px 24px; }
+      .navbar { position: sticky; min-height: 56px; padding: 10px 12px; }
+      .horizontal-scroll, .quick-access-grid { flex-wrap: wrap; }
+      .horizontal-scroll { overflow-x: visible; }
+      .profile-card { flex: 1 1 82px; }
+    }
+    @media (max-width: 380px) {
+      .app-content { padding-left: 12px; padding-right: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="phone-mockup">
+    <!-- Top Notch -->
+    <div class="notch"></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg class="icon-signal" viewBox="0 0 16 12">
+          <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+          <rect x="4" y="6" width="3" height="6" rx="0.5"/>
+          <rect x="8" y="3" width="3" height="9" rx="0.5"/>
+          <rect x="12" y="0" width="3" height="12" rx="0.5"/>
+        </svg>
+        <svg class="icon-wifi" viewBox="0 0 16 12">
+          <path d="M8 9.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-4.24-2.83a6 6 0 0 1 8.48 0l-1.41 1.41a4 4 0 0 0-5.66 0L3.76 6.67zm-2.83-2.83a10 10 0 0 1 14.14 0l-1.41 1.41a8 8 0 0 0-11.32 0L.93 3.84z"/>
+        </svg>
+        <div class="icon-battery">
+          <div class="battery-level"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen Content Area -->
+    <div class="app-content">
+      
+      <h1 class="page-title">Access History</h1>
+
+      <!-- Entry 1: XYZ Hospital -->
+      <div class="history-entry">
+        <div class="hospital-card">
+          <div class="info-row">
+            <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M12 7v10"/></svg>
+            <span>XYZ Hospital</span>
+          </div>
+          <div class="info-row">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Dr. Ahmed</span>
+          </div>
+        </div>
+
+        <div class="details-card">
+          <div class="details-title">Medical information accessed</div>
+          
+          <div class="accessed-grid">
+            <div class="accessed-item">
+              <div class="item-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>
+              </div>
+              <span>Medical conditions</span>
+            </div>
+            <div class="accessed-item">
+              <div class="item-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              </div>
+              <span>Allergies</span>
+            </div>
+            <div class="accessed-item">
+              <div class="item-icon-box">
+                <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 12h6"/></svg>
+              </div>
+              <span>Medication</span>
+            </div>
+          </div>
+
+          <div class="timestamp">Today 2:17 PM</div>
+        </div>
+      </div>
+
+      <!-- Entry 2: ABC Hospital -->
+      <div class="history-entry">
+        <div class="hospital-card">
+          <div class="info-row">
+            <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6M12 7v10"/></svg>
+            <span>ABC Hospital</span>
+          </div>
+          <div class="info-row">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Dr. Sarah</span>
+          </div>
+        </div>
+
+        <div class="details-card">
+          <div class="details-title">Medical information accessed</div>
+          
+          <div class="accessed-grid">
+            <div class="accessed-item">
+              <div class="item-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>
+              </div>
+              <span>Medical conditions</span>
+            </div>
+            <div class="accessed-item">
+              <div class="item-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+              <span>Vitals</span>
+            </div>
+            <div class="accessed-item">
+              <div class="item-icon-box">
+                <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 12h6"/></svg>
+              </div>
+              <span>Medication</span>
+            </div>
+          </div>
+
+          <div class="timestamp">Yesterday 10:45 AM</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Home Indicator Notch -->
+    <div class="home-indicator"></div>
+  </div>
+
+  <script src="medtrace-navigation.js"></script>
+</body>
+</html>
