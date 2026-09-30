@@ -160,12 +160,12 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-signup" data-title="Create Account" data-nav="none">
   <div class="card">
     <h2 class="title">Create Account</h2>
-    <form onsubmit="event.preventDefault();go('v-verify')">
-      <label>Full Name</label><input type="text" id="su-name" required>
-      <label>Email / Phone Number</label><input type="text" required>
-      <label>Password</label><input type="password" required>
-      <label>Confirm Password</label><input type="password" required>
-      <button class="btn btn-primary" style="margin-top:18px">Create Account</button>
+    <form id="signup-form" onsubmit="handleSignup(event)">
+      <label>Full Name</label><input type="text" id="su-name" placeholder="Full Name" required>
+      <label>Email Address</label><input type="email" id="su-email" placeholder="name@example.com" required>
+      <label>Password</label><input type="password" id="su-password" placeholder="At least 8 characters" minlength="8" required>
+      <label>Confirm Password</label><input type="password" id="su-confirm" placeholder="Confirm Password" minlength="8" required>
+      <button type="submit" class="btn btn-primary" id="su-btn" style="margin-top:18px">Create Account</button>
     </form>
     <p class="foot-link">Already have an account? <a class="link" onclick="go('v-login')">Login</a></p>
   </div>
@@ -174,13 +174,13 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-verify" data-title="Verify Account" data-nav="none">
   <div class="card center">
     <h2 class="title">Verify Your Account</h2>
-    <p class="sub">We've sent a verification code to your phone</p>
+    <p class="sub">Account verified successfully. Continue to set up your profile.</p>
     <div class="otp-row">
-      <input maxlength="1" oninput="otpNext(this)"><input maxlength="1" oninput="otpNext(this)">
-      <input maxlength="1" oninput="otpNext(this)"><input maxlength="1" oninput="otpNext(this)">
+      <input maxlength="1" value="1" oninput="otpNext(this)"><input maxlength="1" value="2" oninput="otpNext(this)">
+      <input maxlength="1" value="3" oninput="otpNext(this)"><input maxlength="1" value="4" oninput="otpNext(this)">
     </div>
     <p class="foot-link">Didn't receive a code? <a class="link" onclick="toast('Code resent')">Resend code</a></p>
-    <button class="btn btn-primary" onclick="state.profile.name=document.getElementById('su-name').value||'Jenny';go('v-ob1')">Verify</button>
+    <button class="btn btn-primary" onclick="state.profile.name=state.profile.name||'Jenny';go('v-ob1')">Continue to Profile</button>
   </div>
 </section>
 
@@ -189,11 +189,11 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <p class="sub" style="margin-bottom:0">Welcome to</p>
     <h2 class="title">MedTrace</h2>
     <p class="sub">Please log in to your account to continue</p>
-    <form onsubmit="event.preventDefault();state.profile.name=state.profile.name||'Jenny';go('v-dash')">
-      <label>User ID (Phone No. or Email)</label><input type="text" placeholder="example12@gmail.com">
-      <label>Password</label><input type="password" placeholder="Input Password">
+    <form id="login-form" onsubmit="handleLogin(event, 'patient')">
+      <label>Email Address</label><input type="email" id="login-email" placeholder="example12@gmail.com" required>
+      <label>Password</label><input type="password" id="login-password" placeholder="Input Password" required>
       <p class="foot-link" style="text-align:right;margin:8px 0 0"><a class="link">Forgot Password?</a></p>
-      <button class="btn btn-primary" style="margin-top:18px">Login</button>
+      <button type="submit" class="btn btn-primary" id="login-btn" style="margin-top:18px">Login</button>
     </form>
     <p class="foot-link">Don't have an account? <a class="link" onclick="go('v-signup')">Sign up</a></p>
   </div>
@@ -328,11 +328,11 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-plogin" data-title="Provider Login" data-nav="none">
   <div class="card">
     <h2 class="title">Provider Login</h2>
-    <form onsubmit="event.preventDefault();go('v-pdash')">
-      <label>Email / Provider ID</label><input type="text" placeholder="example12@gmail.com">
-      <label>Password</label><input type="password" placeholder="Input Password">
+    <form id="plogin-form" onsubmit="handleLogin(event, 'provider')">
+      <label>Email / Provider ID</label><input type="email" id="plogin-email" placeholder="example12@gmail.com" required>
+      <label>Password</label><input type="password" id="plogin-password" placeholder="Input Password" required>
       <p class="foot-link" style="text-align:right;margin:8px 0 0"><a class="link">Forgot Password?</a></p>
-      <button class="btn btn-primary" style="margin-top:18px">Login</button>
+      <button type="submit" class="btn btn-primary" id="plogin-btn" style="margin-top:18px">Login</button>
     </form>
   </div>
 </section>
@@ -427,10 +427,22 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 </template>
 
 <script>
-/* ---------------- state ---------------- */
+/* ---------------- state & auth ---------------- */
+const savedUserStr = localStorage.getItem('medtrace_user');
+let savedUser = null;
+try { savedUser = savedUserStr ? JSON.parse(savedUserStr) : null; } catch(e) {}
+const savedToken = localStorage.getItem('medtrace_token') || null;
+
 const state = {
-  role:'patient',
-  profile:{name:'Jenny',dob:'',blood:'Select',contact:''},
+  role: (savedUser && savedUser.role) ? savedUser.role : 'patient',
+  auth: {
+    token: savedToken,
+    user: savedUser
+  },
+  profile:{
+    name: (savedUser && savedUser.full_name) ? savedUser.full_name : 'Jenny',
+    dob:'',blood:'Select',contact:''
+  },
   conditions:[], procedures:[],
   history:[
     {org:'XYZ Hospital',doc:'Dr. Ahmed',items:'Conditions, Allergies, Medication',date:'2 days ago'},
@@ -443,6 +455,212 @@ const state = {
   ]
 };
 let navStack=[];
+
+/* ---------------- API client ---------------- */
+const API_BASE_URL = window.MEDTRACE_API_URL 
+  || localStorage.getItem('medtrace_api_url') 
+  || (window.location.protocol.startsWith('http') ? '' : 'http://localhost:8080');
+
+async function apiRequest(endpoint, options = {}) {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+
+  const token = state.auth && state.auth.token;
+  if (token && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers
+    });
+  } catch (err) {
+    throw new Error('Network error. Unable to reach backend server. Please verify your connection or CORS settings.');
+  }
+
+  let data = null;
+  let text = '';
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    try {
+      data = await response.json();
+    } catch (e) {
+      data = null;
+    }
+  } else {
+    try {
+      text = await response.text();
+    } catch (e) {}
+  }
+
+  if (!response.ok) {
+    let errorMsg = `Request failed (${response.status})`;
+    if (data && data.detail) {
+      if (typeof data.detail === 'string') {
+        errorMsg = data.detail;
+      } else if (Array.isArray(data.detail)) {
+        errorMsg = data.detail.map(d => (d.msg || d.message || JSON.stringify(d))).join(', ');
+      }
+    } else if (text && text.length < 120) {
+      errorMsg = text;
+    } else if (response.status === 401) {
+      errorMsg = 'Incorrect email or password.';
+    } else if (response.status === 409) {
+      errorMsg = 'This email is already registered.';
+    } else if (response.status === 422) {
+      errorMsg = 'Validation error. Please verify your input.';
+    }
+    const error = new Error(errorMsg);
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
+
+function setAuthSession(token, user) {
+  state.auth = { token, user };
+  localStorage.setItem('medtrace_token', token);
+  localStorage.setItem('medtrace_user', JSON.stringify(user));
+  if (user && user.full_name) {
+    state.profile.name = user.full_name;
+  }
+  if (user && user.role) {
+    state.role = user.role;
+  }
+  buildNav();
+}
+
+function logout() {
+  state.auth = { token: null, user: null };
+  localStorage.removeItem('medtrace_token');
+  localStorage.removeItem('medtrace_user');
+  toast('Logged out successfully');
+  buildNav();
+  go('v-welcome', true);
+}
+
+/* ---------------- Auth handlers ---------------- */
+async function handleSignup(event) {
+  event.preventDefault();
+  const nameInput = document.getElementById('su-name');
+  const emailInput = document.getElementById('su-email');
+  const passwordInput = document.getElementById('su-password');
+  const confirmInput = document.getElementById('su-confirm');
+  const btn = document.getElementById('su-btn');
+
+  const fullName = nameInput ? nameInput.value.trim() : '';
+  const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+  const password = passwordInput ? passwordInput.value : '';
+  const confirmPassword = confirmInput ? confirmInput.value : '';
+
+  if (fullName.length < 2) {
+    toast('Full name must be at least 2 characters');
+    return;
+  }
+  if (!email || !email.includes('@')) {
+    toast('Please enter a valid email address');
+    return;
+  }
+  if (password.length < 8) {
+    toast('Password must be at least 8 characters');
+    return;
+  }
+  if (password !== confirmPassword) {
+    toast('Passwords do not match');
+    return;
+  }
+
+  const role = state.role === 'provider' ? 'provider' : 'patient';
+  const payload = {
+    full_name: fullName,
+    email: email,
+    password: password,
+    role: role
+  };
+  if (role === 'provider') {
+    payload.organization = 'Hospital / Clinic';
+  }
+
+  const originalText = btn ? btn.textContent : 'Create Account';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Creating account...';
+  }
+
+  try {
+    const data = await apiRequest('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    setAuthSession(data.access_token, data.user);
+    toast('Account created successfully!');
+    go('v-verify');
+  } catch (err) {
+    toast(err.message || 'Registration failed');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+async function handleLogin(event, expectedRole) {
+  event.preventDefault();
+  const emailId = expectedRole === 'provider' ? 'plogin-email' : 'login-email';
+  const passId = expectedRole === 'provider' ? 'plogin-password' : 'login-password';
+  const btnId = expectedRole === 'provider' ? 'plogin-btn' : 'login-btn';
+
+  const emailInput = document.getElementById(emailId);
+  const passwordInput = document.getElementById(passId);
+  const btn = document.getElementById(btnId);
+
+  const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+  const password = passwordInput ? passwordInput.value : '';
+
+  if (!email || !password) {
+    toast('Please enter both email and password');
+    return;
+  }
+
+  const originalText = btn ? btn.textContent : 'Login';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Logging in...';
+  }
+
+  try {
+    const data = await apiRequest('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    setAuthSession(data.access_token, data.user);
+    toast(`Welcome back, ${data.user.full_name}`);
+    if (data.user.role === 'provider') {
+      state.role = 'provider';
+      buildNav();
+      go('v-pdash', true);
+    } else {
+      state.role = 'patient';
+      buildNav();
+      go('v-dash', true);
+    }
+  } catch (err) {
+    toast(err.message || 'Login failed');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
 
 const PATIENT_NAV=[
   ['v-dash','🏠','Dashboard'],['v-profile','📋','Medical Profile'],
@@ -457,7 +675,11 @@ const PROVIDER_NAV=[
 function buildNav(){
   const items = state.role==='patient'?PATIENT_NAV:PROVIDER_NAV;
   document.getElementById('roleLabel').textContent = state.role==='patient'?'Patient':'Provider';
-  document.getElementById('sidebarNav').innerHTML = items.map(i=>`<a onclick="go('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
+  let navHtml = items.map(i=>`<a onclick="go('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
+  if (state.auth && state.auth.token) {
+    navHtml += `<a onclick="logout()" style="color:#ef4444;margin-top:14px;"><span>🚪</span>Log out</a>`;
+  }
+  document.getElementById('sidebarNav').innerHTML = navHtml;
   document.getElementById('bottomnav').innerHTML = items.map(i=>`<a onclick="go('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
 }
 function switchRole(){
@@ -489,7 +711,7 @@ function goBack(){ if(navStack.length){ const id=navStack.pop(); document.queryS
 
 function toast(msg){
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),1800);
+  setTimeout(()=>t.classList.remove('show'),2400);
 }
 
 /* ---- otp auto advance ---- */
@@ -565,7 +787,11 @@ function respondRequest(approved){
 /* ---- boot ---- */
 document.getElementById('viewport').appendChild(document.getElementById('tpl-views').content.cloneNode(true));
 buildNav();
-go('v-welcome', true);
+if (state.auth && state.auth.token) {
+  go(state.role === 'provider' ? 'v-pdash' : 'v-dash', true);
+} else {
+  go('v-welcome', true);
+}
 </script>
 </body>
 </html>
