@@ -298,7 +298,11 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <div class="qcard" onclick="go('v-emerg2')">🚨 Emergency Profile</div>
     <div class="qcard" onclick="go('v-history')">🕘 Access History</div>
   </div>
-  <button class="btn btn-outline" onclick="simulateRequest()">Simulate incoming access request</button>
+  <div id="dash-requests-container" style="display:none;margin-top:16px;">
+    <p class="section-title" style="color:var(--blue);margin-top:0">Incoming Access Requests</p>
+    <div id="dash-requests-list"></div>
+  </div>
+  <button class="btn btn-outline" id="dash-check-req-btn" style="margin-top:14px;width:100%" onclick="loadAccessRequests(true)">🔄 Check for Access Requests</button>
 </section>
 
 <section class="view" id="v-profile" data-title="Medical Profile" data-nav="profile">
@@ -320,13 +324,25 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-request" data-title="Access Request" data-nav="none">
   <div class="card">
     <h2 class="title">Medical Access Request</h2>
-    <div style="display:flex;gap:10px;align-items:center;margin:14px 0"><div class="avatar">DA</div><div><b>Dr. Ahmed</b><br><span class="sub" style="margin:0">XYZ Hospital</span></div></div>
-    <p class="sub">Dr. Ahmed is requesting access to your medical information.</p>
-    <p class="section-title">Requested Information</p>
-    <div class="chip">Medical Conditions</div><div class="chip">Allergies</div><div class="chip">Medications</div>
-    <div class="row" style="margin-top:20px">
-      <button class="btn btn-outline" onclick="respondRequest(false)">Reject</button>
-      <button class="btn btn-primary" onclick="respondRequest(true)">Approve Access</button>
+    <div id="req-card-content">
+      <div style="display:flex;gap:10px;align-items:center;margin:14px 0">
+        <div class="avatar" id="req-avatar">DA</div>
+        <div>
+          <b id="req-provider-name">Healthcare Provider</b><br>
+          <span class="sub" id="req-provider-org" style="margin:0">Hospital / Clinic</span>
+        </div>
+      </div>
+      <p class="sub" id="req-reason-text">A healthcare provider is requesting access to your medical information.</p>
+      <p class="section-title">Requested Information</p>
+      <div class="chip">Medical Conditions</div><div class="chip">Allergies</div><div class="chip">Medications</div>
+      <div class="row" style="margin-top:20px">
+        <button class="btn btn-outline" id="req-reject-btn" onclick="respondActiveRequest(false)">Reject</button>
+        <button class="btn btn-primary" id="req-approve-btn" onclick="respondActiveRequest(true)">Approve Access</button>
+      </div>
+    </div>
+    <div id="req-empty" style="display:none;text-align:center;padding:16px 0;">
+      <p class="sub">No pending access requests to review.</p>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="go('v-dash')">Return to Dashboard</button>
     </div>
   </div>
 </section>
@@ -415,14 +431,18 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-preq" data-title="Request Information" data-nav="none">
   <div class="card">
     <h2 class="title">Request Medical Information</h2>
-    <p class="sub">Select the information you need for this consultation</p>
+    <p class="sub" id="preq-patient-sub">Select the information you need for this consultation</p>
     <label class="checkline"><input type="checkbox" checked> Medical conditions</label>
     <label class="checkline"><input type="checkbox" checked> Allergies</label>
     <label class="checkline"><input type="checkbox"> Current medications</label>
     <label class="checkline"><input type="checkbox"> Previous procedures</label>
     <label>Reason for Access</label>
-    <select><option>Consultation</option><option>Emergency</option><option>Routine Checkup</option></select>
-    <button class="btn btn-primary" style="margin-top:18px" onclick="go('v-psent')">Send Request</button>
+    <select id="preq-reason">
+      <option value="Consultation">Consultation</option>
+      <option value="Emergency">Emergency</option>
+      <option value="Routine Checkup">Routine Checkup</option>
+    </select>
+    <button class="btn btn-primary" id="preq-btn" style="margin-top:18px" onclick="submitAccessRequest()">Send Request</button>
   </div>
 </section>
 
@@ -430,8 +450,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   <div class="card center">
     <div style="font-size:2.6rem">📨</div>
     <h2 class="title">Request Sent</h2>
-    <p class="sub">The patient has been notified. You'll be able to view the approved information once access is granted.</p>
-    <button class="btn btn-outline" onclick="go('v-pinfo')">View Info (demo: approved)</button>
+    <p class="sub" id="psent-sub">The patient has been notified. You'll be able to view the approved information once access is granted.</p>
     <button class="btn btn-primary" style="margin-top:10px" onclick="go('v-pdash')">Back to Dashboard</button>
   </div>
 </section>
@@ -503,6 +522,9 @@ const state = {
   records: null,
   providerDashboard: null,
   scannedPatient: null,
+  accessRequests: [],
+  activeRequestId: null,
+  lastSentRequest: null,
   history:[
     {org:'XYZ Hospital',doc:'Dr. Ahmed',items:'Conditions, Allergies, Medication',date:'2 days ago'},
     {org:'ABC Hospital',doc:'Dr. Sarah',items:'Conditions, Vitals, Medication',date:'1 week ago'}
@@ -648,6 +670,9 @@ function logout() {
   state.records = null;
   state.providerDashboard = null;
   state.scannedPatient = null;
+  state.accessRequests = [];
+  state.activeRequestId = null;
+  state.lastSentRequest = null;
   localStorage.removeItem('medtrace_token');
   localStorage.removeItem('medtrace_user');
   localStorage.removeItem('medtrace_passport_id');
@@ -1228,6 +1253,228 @@ function renderScannedPatientUI(patient) {
   if (emergEl) emergEl.textContent = patient.emergency_mode_available ? 'Available' : 'Unavailable';
 }
 
+/* ---- Group 5: Consent / Access Request Workflow ---- */
+async function submitAccessRequest() {
+  if (!state.auth || !state.auth.token || state.role !== 'provider') {
+    toast('Must be logged in as a healthcare provider to request access');
+    return;
+  }
+
+  const token = (state.scannedPatient && state.scannedPatient.qr_token) 
+    || localStorage.getItem('medtrace_last_qr_token');
+
+  if (!token) {
+    toast('No scanned patient QR token found. Please scan patient first.');
+    go('v-scan');
+    return;
+  }
+
+  const reasonEl = document.getElementById('preq-reason');
+  const reason = reasonEl ? reasonEl.value : 'Consultation';
+
+  const btn = document.getElementById('preq-btn');
+  const originalText = btn ? btn.textContent : 'Send Request';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Sending Request...';
+  }
+
+  try {
+    const data = await apiRequest('/api/access/requests', {
+      method: 'POST',
+      body: JSON.stringify({
+        qr_token: token,
+        reason: reason
+      })
+    });
+    if (data) {
+      state.lastSentRequest = data;
+      const patientName = (state.scannedPatient && state.scannedPatient.patient_name) || data.patient_name || 'Patient';
+      const psentSub = document.getElementById('psent-sub');
+      if (psentSub) {
+        psentSub.textContent = `${patientName} has been notified. You will be able to view their medical information once access is granted.`;
+      }
+      toast(`✓ Access request sent to ${patientName}`);
+      loadProviderDashboard();
+      go('v-psent');
+    }
+  } catch (err) {
+    toast(err.message || 'Failed to submit access request');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+async function loadAccessRequests(showToast = false) {
+  if (!state.auth || !state.auth.token) return [];
+  try {
+    const data = await apiRequest('/api/access/requests');
+    if (Array.isArray(data)) {
+      state.accessRequests = data;
+      renderAccessRequestsUI(data);
+      if (showToast) {
+        const pendingCount = data.filter(r => r.status === 'pending').length;
+        toast(`Checked requests: ${pendingCount} pending`);
+      }
+    }
+    return data;
+  } catch (err) {
+    console.error('Failed to load access requests:', err);
+    if (showToast) toast(err.message || 'Failed to check access requests');
+    return [];
+  }
+}
+
+function renderAccessRequestsUI(requests = state.accessRequests) {
+  const reqList = Array.isArray(requests) ? requests : [];
+  const pendingRequests = reqList.filter(r => r.status === 'pending');
+  const decidedRequests = reqList.filter(r => r.status !== 'pending');
+
+  // 1. Dashboard Pending Requests Widget
+  const dashContainer = document.getElementById('dash-requests-container');
+  const dashList = document.getElementById('dash-requests-list');
+  if (dashContainer && dashList) {
+    if (pendingRequests.length > 0) {
+      dashContainer.style.display = 'block';
+      dashList.innerHTML = pendingRequests.map(r => `
+        <div class="card" style="margin-bottom:12px;border:1.5px solid var(--blue);background:var(--blue-l);padding:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <b style="color:var(--navy);font-size:.95rem">${r.provider_name || 'Healthcare Provider'}</b><br>
+              <span class="sub" style="margin:2px 0 6px;display:block;color:var(--gray)">Reason: ${r.reason || 'Consultation'} &middot; ${new Date(r.created_at).toLocaleDateString()}</span>
+            </div>
+            <span class="badge warn">Pending</span>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn btn-outline" style="background:#fff;padding:8px" onclick="respondRequest(${r.id}, false)">Reject</button>
+            <button class="btn btn-primary" style="padding:8px" onclick="respondRequest(${r.id}, true)">Approve Access</button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      dashContainer.style.display = 'none';
+      dashList.innerHTML = '';
+    }
+  }
+
+  // 2. Dedicated Request View (v-request)
+  const reqCard = document.getElementById('req-card-content');
+  const reqEmpty = document.getElementById('req-empty');
+  if (reqCard && reqEmpty) {
+    let activeReq = null;
+    if (state.activeRequestId) {
+      activeReq = pendingRequests.find(r => r.id === state.activeRequestId);
+    }
+    if (!activeReq && pendingRequests.length > 0) {
+      activeReq = pendingRequests[0];
+      state.activeRequestId = activeReq.id;
+    }
+
+    if (activeReq) {
+      reqCard.style.display = 'block';
+      reqEmpty.style.display = 'none';
+
+      const avatarEl = document.getElementById('req-avatar');
+      if (avatarEl) {
+        const initials = (activeReq.provider_name || 'HP').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        avatarEl.textContent = initials || 'HP';
+      }
+      const provNameEl = document.getElementById('req-provider-name');
+      if (provNameEl) provNameEl.textContent = activeReq.provider_name || 'Healthcare Provider';
+
+      const provOrgEl = document.getElementById('req-provider-org');
+      if (provOrgEl) provOrgEl.textContent = activeReq.reason ? `Reason: ${activeReq.reason}` : 'Healthcare Consultation';
+
+      const reasonText = document.getElementById('req-reason-text');
+      if (reasonText) {
+        reasonText.textContent = `${activeReq.provider_name || 'A provider'} is requesting access to your medical information for ${activeReq.reason || 'consultation'}.`;
+      }
+
+      const approveBtn = document.getElementById('req-approve-btn');
+      if (approveBtn) approveBtn.setAttribute('onclick', `respondRequest(${activeReq.id}, true)`);
+      const rejectBtn = document.getElementById('req-reject-btn');
+      if (rejectBtn) rejectBtn.setAttribute('onclick', `respondRequest(${activeReq.id}, false)`);
+    } else {
+      reqCard.style.display = 'none';
+      reqEmpty.style.display = 'block';
+    }
+  }
+
+  // 3. History List (v-history)
+  const histList = document.getElementById('history-list');
+  if (histList) {
+    if (decidedRequests.length > 0) {
+      histList.innerHTML = decidedRequests.map(h => `
+        <div class="list-item">
+          <div>
+            <b>${h.provider_name || 'Healthcare Provider'}</b><br>
+            <span class="sub" style="margin:0">${h.reason || 'Consultation'} &middot; ${new Date(h.decided_at || h.created_at).toLocaleDateString()}</span>
+          </div>
+          <span class="badge ${h.status === 'approved' ? 'ok' : 'warn'}">${h.status === 'approved' ? 'Approved' : 'Rejected'}</span>
+        </div>
+      `).join('');
+    } else {
+      histList.innerHTML = '<p class="sub" style="margin:10px 0">No past access requests recorded yet.</p>';
+    }
+  }
+}
+
+async function respondRequest(requestId, approved) {
+  if (!requestId) {
+    const pending = (state.accessRequests || []).find(r => r.status === 'pending');
+    if (pending) requestId = pending.id;
+  }
+  if (!requestId) {
+    toast('No pending request selected');
+    return;
+  }
+
+  // Prevent duplicate submissions
+  const allBtns = document.querySelectorAll(`button[onclick*="respondRequest"]`);
+  allBtns.forEach(b => {
+    b.disabled = true;
+    b.dataset.prevText = b.textContent;
+    b.textContent = 'Updating...';
+  });
+
+  try {
+    const updated = await apiRequest(`/api/access/requests/${requestId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ approved })
+    });
+    if (updated) {
+      toast(approved ? '✓ Access request approved' : 'Access request rejected');
+      if (Array.isArray(state.accessRequests)) {
+        const idx = state.accessRequests.findIndex(r => r.id === requestId);
+        if (idx !== -1) {
+          state.accessRequests[idx] = updated;
+        } else {
+          state.accessRequests.unshift(updated);
+        }
+      }
+      state.activeRequestId = null;
+      renderAccessRequestsUI(state.accessRequests);
+      await loadAccessRequests();
+      go('v-dash');
+    }
+  } catch (err) {
+    toast(err.message || 'Failed to update request');
+  } finally {
+    allBtns.forEach(b => {
+      b.disabled = false;
+      if (b.dataset.prevText) b.textContent = b.dataset.prevText;
+    });
+  }
+}
+
+function respondActiveRequest(approved) {
+  const reqId = state.activeRequestId || ((state.accessRequests || []).find(r => r.status === 'pending') || {}).id;
+  respondRequest(reqId, approved);
+}
+
 async function loadPatientProfile(){
   return await loadPatientDashboard();
 }
@@ -1556,6 +1803,16 @@ function renderDynamic(id){
       loadPatientDashboard();
     }
     loadPatientQrImage();
+    if (state.role === 'patient') {
+      renderAccessRequestsUI(state.accessRequests);
+      loadAccessRequests();
+    }
+  }
+  if(id==='v-request'){
+    renderAccessRequestsUI(state.accessRequests);
+    if (!state.accessRequests || state.accessRequests.length === 0) {
+      loadAccessRequests();
+    }
   }
   if(id==='v-profile'){
     renderRecordsUI(state.records);
@@ -1570,8 +1827,8 @@ function renderDynamic(id){
     }
   }
   if(id==='v-history'){
-    document.getElementById('history-list').innerHTML = state.history.map(h=>`
-      <div class="list-item"><div><b>${h.org}</b><br><span class="sub" style="margin:0">${h.doc} &middot; ${h.items}</span></div><span class="badge ok">${h.date}</span></div>`).join('') || '<p class="sub">No access recorded yet.</p>';
+    renderAccessRequestsUI(state.accessRequests);
+    loadAccessRequests();
   }
   if(id==='v-pdash'){
     renderProviderDashboardUI(state.providerDashboard);
@@ -1589,15 +1846,12 @@ function renderDynamic(id){
   if(id==='v-pfound'){
     renderScannedPatientUI(state.scannedPatient);
   }
-}
-
-function simulateRequest(){ go('v-request'); }
-function respondRequest(approved){
-  if(approved){
-    state.history.unshift({org:'XYZ Hospital',doc:'Dr. Ahmed',items:'Conditions, Allergies, Medication',date:'Just now'});
-    toast('Access approved — added to history');
-  } else { toast('Request rejected'); }
-  go('v-dash');
+  if(id==='v-preq'){
+    const sub = document.getElementById('preq-patient-sub');
+    if (sub && state.scannedPatient) {
+      sub.textContent = `Requesting consultation access for: ${state.scannedPatient.patient_name || 'Patient'}`;
+    }
+  }
 }
 
 /* ---- boot ---- */
@@ -1608,6 +1862,7 @@ if (state.auth && state.auth.token) {
     loadPatientDashboard();
     loadPatientRecords();
     loadPatientQrImage();
+    loadAccessRequests();
   } else if (state.role === 'provider') {
     loadProviderDashboard();
   }
