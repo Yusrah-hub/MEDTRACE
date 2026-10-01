@@ -23,7 +23,7 @@ a{color:inherit;text-decoration:none;}
 #sidebar .navlist a{display:flex;gap:10px;align-items:center;padding:11px 10px;border-radius:10px;color:#b9c6da;font-size:.92rem;font-weight:600;margin-bottom:4px;}
 #sidebar .navlist a.active,#sidebar .navlist a:hover{background:var(--blue);color:#fff;}
 #sidebar .role-switch{margin-top:auto;font-size:.72rem;color:#8fa2bd;padding:8px;}
-#sidebar .role-switch button{background:none;color:#fff;text-decoration:underline;font-size:.72rem;}
+#sidebar .role-switch button{background:none;color:#21189a;font: size 0.75em;}
 #main{flex:1;min-width:0;display:flex;flex-direction:column;}
 #topbar{display:none;align-items:center;gap:10px;padding:14px 18px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;}
 #topbar button{background:none;font-size:1.2rem;color:var(--navy);}
@@ -130,7 +130,11 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   <aside id="sidebar">
     <h1>MedTrace</h1>
     <div class="navlist" id="sidebarNav"></div>
-    <div class="role-switch">Viewing as <b id="roleLabel">Patient</b><br><button onclick="switchRole()">Switch role</button></div>
+    <div class="role-switch">
+      <span style="color:var(--gray);font-size:.78rem">Current Portal:</span><br>
+      <b id="roleLabel">Patient Portal</b><br>
+      <button id="switchRoleBtn" onclick="switchRole()" style="margin-top:6px;width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600">Switch to Provider Portal</button>
+    </div>
   </aside>
 
   <div id="main">
@@ -152,15 +156,21 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <div style="font-size:3rem">🩺</div>
     <h2 class="title">Your health information, wherever you go</h2>
     <p class="sub">Securely store and share your essential medical information when you need it.</p>
-    <button class="btn btn-primary" onclick="go('v-signup')">Create Account</button>
-    <div class="foot-link"><a class="link" onclick="go('v-login')">Log in</a> &middot; <a class="link" onclick="switchRole();go('v-plogin')">I'm a provider</a></div>
+    <button class="btn btn-primary" onclick="state.role='patient';buildNav();go('v-signup')">Create Patient Account</button>
+    <button class="btn btn-outline" style="margin-top:10px" onclick="state.role='patient';buildNav();go('v-login')">Patient Login</button>
+    <div class="foot-link" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      Are you a healthcare provider?<br>
+      <a class="link" onclick="state.role='provider';buildNav();go('v-plogin')">Provider Login</a> &middot; 
+      <a class="link" onclick="state.role='provider';buildNav();go('v-psignup')">Register as Provider</a>
+    </div>
   </div>
 </section>
 
 <section class="view" id="v-signup" data-title="Create Account" data-nav="none">
   <div class="card">
-    <h2 class="title">Create Account</h2>
-    <form id="signup-form" onsubmit="handleSignup(event)">
+    <h2 class="title">Create Patient Account</h2>
+    <p class="sub">Sign up to create and manage your personal medical passport</p>
+    <form id="signup-form" onsubmit="handleSignup(event, 'patient')">
       <label>Full Name</label><input type="text" id="su-name" placeholder="Full Name" required>
       <label>Email Address</label><input type="email" id="su-email" placeholder="name@example.com" required>
       <label>Password</label><input type="password" id="su-password" placeholder="At least 8 characters" minlength="8" required>
@@ -168,6 +178,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
       <button type="submit" class="btn btn-primary" id="su-btn" style="margin-top:18px">Create Account</button>
     </form>
     <p class="foot-link">Already have an account? <a class="link" onclick="go('v-login')">Login</a></p>
+    <p class="foot-link" style="margin-top:6px">Healthcare professional? <a class="link" onclick="state.role='provider';buildNav();go('v-psignup')">Register as Provider</a></p>
   </div>
 </section>
 
@@ -188,7 +199,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   <div class="card">
     <p class="sub" style="margin-bottom:0">Welcome to</p>
     <h2 class="title">MedTrace</h2>
-    <p class="sub">Please log in to your account to continue</p>
+    <p class="sub">Please log in to your patient account to continue</p>
     <form id="login-form" onsubmit="handleLogin(event, 'patient')">
       <label>Email Address</label><input type="email" id="login-email" placeholder="example12@gmail.com" required>
       <label>Password</label><input type="password" id="login-password" placeholder="Input Password" required>
@@ -196,6 +207,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
       <button type="submit" class="btn btn-primary" id="login-btn" style="margin-top:18px">Login</button>
     </form>
     <p class="foot-link">Don't have an account? <a class="link" onclick="go('v-signup')">Sign up</a></p>
+    <p class="foot-link" style="margin-top:6px">Healthcare professional? <a class="link" onclick="state.role='provider';buildNav();go('v-plogin')">Provider Login</a></p>
   </div>
 </section>
 
@@ -336,16 +348,35 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   <button class="btn btn-primary" style="margin-top:16px" onclick="go('v-dash')">Done</button>
 </section>
 
-<!-- ===================== PROVIDER APP ===================== -->
 <section class="view" id="v-plogin" data-title="Provider Login" data-nav="none">
   <div class="card">
     <h2 class="title">Provider Login</h2>
+    <p class="sub">Log in to your healthcare provider portal</p>
     <form id="plogin-form" onsubmit="handleLogin(event, 'provider')">
-      <label>Email / Provider ID</label><input type="email" id="plogin-email" placeholder="example12@gmail.com" required>
+      <label>Work Email</label><input type="email" id="plogin-email" placeholder="doctor@hospital.com" required>
       <label>Password</label><input type="password" id="plogin-password" placeholder="Input Password" required>
       <p class="foot-link" style="text-align:right;margin:8px 0 0"><a class="link">Forgot Password?</a></p>
       <button type="submit" class="btn btn-primary" id="plogin-btn" style="margin-top:18px">Login</button>
     </form>
+    <p class="foot-link">Don't have a provider account? <a class="link" onclick="go('v-psignup')">Register as Provider</a></p>
+    <p class="foot-link" style="margin-top:6px">Not a provider? <a class="link" onclick="state.role='patient';buildNav();go('v-login')">Patient Login</a></p>
+  </div>
+</section>
+
+<section class="view" id="v-psignup" data-title="Provider Registration" data-nav="none">
+  <div class="card">
+    <h2 class="title">Register as Provider</h2>
+    <p class="sub">Create an account for hospital / clinic staff</p>
+    <form id="psignup-form" onsubmit="handleSignup(event, 'provider')">
+      <label>Full Name</label><input type="text" id="psu-name" placeholder="e.g. Dr. Jane Smith" required>
+      <label>Organization / Hospital</label><input type="text" id="psu-org" placeholder="e.g. City General Hospital" required>
+      <label>Work Email</label><input type="email" id="psu-email" placeholder="doctor@hospital.com" required>
+      <label>Password</label><input type="password" id="psu-password" placeholder="At least 8 characters" minlength="8" required>
+      <label>Confirm Password</label><input type="password" id="psu-confirm" placeholder="Confirm Password" minlength="8" required>
+      <button type="submit" class="btn btn-primary" id="psu-btn" style="margin-top:18px">Create Provider Account</button>
+    </form>
+    <p class="foot-link">Already registered? <a class="link" onclick="go('v-plogin')">Provider Login</a></p>
+    <p class="foot-link" style="margin-top:6px">Not a provider? <a class="link" onclick="state.role='patient';buildNav();go('v-welcome')">Patient Portal</a></p>
   </div>
 </section>
 
@@ -485,14 +516,23 @@ const state = {
 let navStack=[];
 
 /* ---------------- API client ---------------- */
-const API_BASE_URL = window.MEDTRACE_API_URL 
-  || localStorage.getItem('medtrace_api_url') 
-  || (window.location.protocol.startsWith('http') ? '' : 'http://localhost:8080');
+function getApiBaseUrl() {
+  if (window.MEDTRACE_API_URL) return window.MEDTRACE_API_URL;
+  const stored = localStorage.getItem('medtrace_api_url');
+  if (stored) return stored;
+  if (window.location.protocol.startsWith('http')) {
+    return '';
+  }
+  return 'http://localhost:3000';
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 async function apiRequest(endpoint, options = {}) {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const primaryBase = getApiBaseUrl();
   const headers = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
     ...(options.headers || {})
   };
 
@@ -501,30 +541,56 @@ async function apiRequest(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  let response;
-  try {
-    response = await fetch(url, {
+  async function executeFetch(base) {
+    const url = endpoint.startsWith('http') ? endpoint : `${base}${endpoint}`;
+    const res = await fetch(url, {
       ...options,
       headers
     });
-  } catch (err) {
-    throw new Error('Network error. Unable to reach backend server. Please verify your connection or CORS settings.');
+    let data = null;
+    let text = '';
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = null;
+      }
+    } else {
+      try {
+        text = await res.text();
+      } catch (e) {}
+    }
+    return { res, data, text };
   }
 
-  let data = null;
-  let text = '';
-  const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    try {
-      data = await response.json();
-    } catch (e) {
-      data = null;
+  let attempt;
+  try {
+    attempt = await executeFetch(primaryBase);
+    // If dev server returned HTML 404 because proxy was not reached, attempt alternate port fallback
+    if (attempt.res.status === 404 && attempt.text && attempt.text.includes('<html') && !endpoint.startsWith('http')) {
+      const fallbackBase = primaryBase === '' ? 'http://localhost:8080' : (primaryBase === 'http://localhost:3000' ? 'http://localhost:8080' : 'http://localhost:3000');
+      try {
+        const fallbackAttempt = await executeFetch(fallbackBase);
+        if (fallbackAttempt.res.ok || (fallbackAttempt.data && fallbackAttempt.data.detail)) {
+          attempt = fallbackAttempt;
+        }
+      } catch (fbErr) {}
     }
-  } else {
-    try {
-      text = await response.text();
-    } catch (e) {}
+  } catch (err) {
+    if (!endpoint.startsWith('http')) {
+      const fallbackBase = primaryBase === 'http://localhost:3000' ? 'http://localhost:8080' : 'http://localhost:3000';
+      try {
+        attempt = await executeFetch(fallbackBase);
+      } catch (fbErr) {
+        throw new Error('Network error. Unable to reach backend server. Please verify your connection or dev server.');
+      }
+    } else {
+      throw new Error('Network error. Unable to reach backend server. Please verify your connection or dev server.');
+    }
   }
+
+  const { res: response, data, text } = attempt;
 
   if (!response.ok) {
     let errorMsg = `Request failed (${response.status})`;
@@ -534,12 +600,16 @@ async function apiRequest(endpoint, options = {}) {
       } else if (Array.isArray(data.detail)) {
         errorMsg = data.detail.map(d => (d.msg || d.message || JSON.stringify(d))).join(', ');
       }
-    } else if (text && text.length < 120) {
+    } else if (text && text.length < 120 && !text.includes('<html')) {
       errorMsg = text;
     } else if (response.status === 401) {
       errorMsg = 'Incorrect email or password.';
     } else if (response.status === 404) {
-      errorMsg = 'Patient QR code was not found.';
+      if (endpoint.includes('/patients/lookup/')) {
+        errorMsg = 'Patient QR code was not found.';
+      } else {
+        errorMsg = 'Requested endpoint was not found (404). Please ensure the backend is running.';
+      }
     } else if (response.status === 409) {
       errorMsg = 'This email is already registered.';
     } else if (response.status === 422) {
@@ -586,14 +656,21 @@ function logout() {
   go('v-welcome', true);
 }
 
-/* ---------------- Auth handlers ---------------- */
-async function handleSignup(event) {
+async function handleSignup(event, formRole = 'patient') {
   event.preventDefault();
-  const nameInput = document.getElementById('su-name');
-  const emailInput = document.getElementById('su-email');
-  const passwordInput = document.getElementById('su-password');
-  const confirmInput = document.getElementById('su-confirm');
-  const btn = document.getElementById('su-btn');
+  const isProvider = formRole === 'provider';
+
+  const nameId = isProvider ? 'psu-name' : 'su-name';
+  const emailId = isProvider ? 'psu-email' : 'su-email';
+  const passId = isProvider ? 'psu-password' : 'su-password';
+  const confirmId = isProvider ? 'psu-confirm' : 'su-confirm';
+  const btnId = isProvider ? 'psu-btn' : 'su-btn';
+
+  const nameInput = document.getElementById(nameId);
+  const emailInput = document.getElementById(emailId);
+  const passwordInput = document.getElementById(passId);
+  const confirmInput = document.getElementById(confirmId);
+  const btn = document.getElementById(btnId);
 
   const fullName = nameInput ? nameInput.value.trim() : '';
   const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
@@ -617,15 +694,21 @@ async function handleSignup(event) {
     return;
   }
 
-  const role = state.role === 'provider' ? 'provider' : 'patient';
   const payload = {
     full_name: fullName,
     email: email,
     password: password,
-    role: role
+    role: isProvider ? 'provider' : 'patient'
   };
-  if (role === 'provider') {
-    payload.organization = 'Hospital / Clinic';
+
+  if (isProvider) {
+    const orgInput = document.getElementById('psu-org');
+    const org = orgInput ? orgInput.value.trim() : '';
+    if (!org) {
+      toast('Please enter your hospital or clinic name');
+      return;
+    }
+    payload.organization = org;
   }
 
   const originalText = btn ? btn.textContent : 'Create Account';
@@ -640,8 +723,18 @@ async function handleSignup(event) {
       body: JSON.stringify(payload)
     });
     setAuthSession(data.access_token, data.user);
-    toast('Account created successfully!');
-    go('v-verify');
+    if (isProvider) {
+      state.role = 'provider';
+      buildNav();
+      toast(`Welcome, ${data.user.full_name}! Provider account created.`);
+      loadProviderDashboard();
+      go('v-pdash', true);
+    } else {
+      state.role = 'patient';
+      buildNav();
+      toast('Account created successfully!');
+      go('v-verify');
+    }
   } catch (err) {
     toast(err.message || 'Registration failed');
   } finally {
@@ -717,19 +810,61 @@ const PROVIDER_NAV=[
 ];
 
 function buildNav(){
+  const isAuth = Boolean(state.auth && state.auth.token);
   const items = state.role==='patient'?PATIENT_NAV:PROVIDER_NAV;
-  document.getElementById('roleLabel').textContent = state.role==='patient'?'Patient':'Provider';
-  let navHtml = items.map(i=>`<a onclick="go('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
-  if (state.auth && state.auth.token) {
-    navHtml += `<a onclick="logout()" style="color:#ef4444;margin-top:14px;"><span>🚪</span>Log out</a>`;
+  const roleEl = document.getElementById('roleLabel');
+  if (roleEl) {
+    if (isAuth && state.auth.user) {
+      roleEl.textContent = `${state.role === 'patient' ? 'Patient' : 'Provider'}: ${state.auth.user.full_name}`;
+    } else {
+      roleEl.textContent = state.role === 'patient' ? 'Patient Portal' : 'Provider Portal';
+    }
+  }
+
+  const switchBtn = document.getElementById('switchRoleBtn');
+  if (switchBtn) {
+    const target = state.role === 'patient' ? 'Provider' : 'Patient';
+    switchBtn.textContent = isAuth ? `Switch to ${target} Portal (Log out)` : `Switch to ${target} Portal`;
+  }
+
+  let navHtml = items.map(i=>`<a onclick="handleNavClick('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
+  if (isAuth) {
+    navHtml += `<a onclick="logout()" style="color:#ef4444;margin-top:14px;cursor:pointer"><span>🚪</span>Log out</a>`;
   }
   document.getElementById('sidebarNav').innerHTML = navHtml;
-  document.getElementById('bottomnav').innerHTML = items.map(i=>`<a onclick="go('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
+  document.getElementById('bottomnav').innerHTML = items.map(i=>`<a onclick="handleNavClick('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
 }
+
+function handleNavClick(id) {
+  if (!state.auth || !state.auth.token) {
+    toast('Please log in to access this section');
+    go(state.role === 'provider' ? 'v-plogin' : 'v-login');
+    return;
+  }
+  go(id);
+}
+
 function switchRole(){
-  state.role = state.role==='patient'?'provider':'patient';
+  const targetRole = state.role === 'patient' ? 'provider' : 'patient';
+  if (state.auth && state.auth.token) {
+    if (cachedQrBlobUrl) {
+      try { URL.revokeObjectURL(cachedQrBlobUrl); } catch(e) {}
+      cachedQrBlobUrl = null;
+    }
+    state.auth = { token: null, user: null };
+    state.profile.passport_id = '';
+    state.dashboard = null;
+    state.records = null;
+    state.providerDashboard = null;
+    state.scannedPatient = null;
+    localStorage.removeItem('medtrace_token');
+    localStorage.removeItem('medtrace_user');
+    localStorage.removeItem('medtrace_passport_id');
+    toast(`Switched to ${targetRole === 'provider' ? 'Healthcare Provider' : 'Patient'} portal`);
+  }
+  state.role = targetRole;
   buildNav();
-  go(state.role==='patient'?'v-welcome':'v-plogin', true);
+  go(targetRole === 'patient' ? 'v-welcome' : 'v-plogin', true);
 }
 
 function highlightNav(id){
@@ -770,22 +905,38 @@ async function loadPatientQrImage() {
     applyQrImage(cachedQrBlobUrl);
     return cachedQrBlobUrl;
   }
-  try {
-    const url = `${API_BASE_URL}/api/patient/qr.png`;
+  const token = state.auth.token;
+  async function fetchQr(base) {
+    const url = `${base}/api/patient/qr.png`;
     const res = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${state.auth.token}`
+        'Authorization': `Bearer ${token}`
       }
     });
     if (!res.ok) throw new Error('Failed to load QR image: ' + res.status);
-    const blob = await res.blob();
+    return await res.blob();
+  }
+
+  let blob = null;
+  const primaryBase = getApiBaseUrl();
+  try {
+    blob = await fetchQr(primaryBase);
+  } catch (err) {
+    try {
+      const fallbackBase = primaryBase === '' ? 'http://localhost:8080' : (primaryBase === 'http://localhost:3000' ? 'http://localhost:8080' : 'http://localhost:3000');
+      blob = await fetchQr(fallbackBase);
+    } catch (fbErr) {
+      console.error('QR load error:', err, fbErr);
+      return null;
+    }
+  }
+
+  if (blob) {
     cachedQrBlobUrl = URL.createObjectURL(blob);
     applyQrImage(cachedQrBlobUrl);
     return cachedQrBlobUrl;
-  } catch (err) {
-    console.error('QR load error:', err);
-    return null;
   }
+  return null;
 }
 
 function applyQrImage(url) {
