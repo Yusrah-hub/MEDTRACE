@@ -158,6 +158,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <p class="sub">Securely store and share your essential medical information when you need it.</p>
     <button class="btn btn-primary" onclick="state.role='patient';buildNav();go('v-signup')">Create Patient Account</button>
     <button class="btn btn-outline" style="margin-top:10px" onclick="state.role='patient';buildNav();go('v-login')">Patient Login</button>
+    <button class="btn btn-danger" id="welcome-emerg-btn" style="margin-top:12px;background:#e11d48;color:#fff;width:100%;font-weight:700;" onclick="go('v-emerg-scan')">🚨 Emergency QR Lookup</button>
     <div class="foot-link" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
       Are you a healthcare provider?<br>
       <a class="link" onclick="state.role='provider';buildNav();go('v-plogin')">Provider Login</a> &middot; 
@@ -228,13 +229,22 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-ob2" data-title="Medical Conditions" data-nav="none">
   <div class="card">
     <p class="step">Step 2 of 4</p>
-    <h2 class="title">Medical Conditions</h2>
-    <p class="sub">Add any medical conditions you currently have</p>
+    <h2 class="title">Medical Conditions &amp; Health Details</h2>
+    <p class="sub">Add any medical conditions, allergies, or medications you currently have</p>
     <label>Medical Condition</label>
     <div class="row"><input type="text" id="cond-input" placeholder="e.g. Asthma" onkeydown="if(event.key==='Enter'){event.preventDefault();addCondition();}"><button class="btn btn-outline" id="add-cond-btn" style="width:auto;padding:0 16px" onclick="addCondition()">Add</button></div>
     <div id="cond-list" style="margin-top:12px"></div>
     <label class="checkline"><input type="checkbox" onchange="toggleNone(this,'cond-input',state.conditions,'cond-list')"> I don't have any conditions</label>
-    <button class="btn btn-primary" id="ob2-btn" style="margin-top:10px" onclick="saveP2()">Continue</button>
+
+    <label style="margin-top:14px">Allergies (optional)</label>
+    <div class="row"><input type="text" id="ob-allergy-input" placeholder="e.g. Penicillin - Severe rash" onkeydown="if(event.key==='Enter'){event.preventDefault();addObAllergy();}"><button class="btn btn-outline" id="ob-add-allergy-btn" style="width:auto;padding:0 16px" onclick="addObAllergy()">Add</button></div>
+    <div id="ob-allergy-list" style="margin-top:8px"></div>
+
+    <label style="margin-top:14px">Current Medications (optional)</label>
+    <div class="row"><input type="text" id="ob-med-input" placeholder="e.g. Albuterol - 90mcg" onkeydown="if(event.key==='Enter'){event.preventDefault();addObMedication();}"><button class="btn btn-outline" id="ob-add-med-btn" style="width:auto;padding:0 16px" onclick="addObMedication()">Add</button></div>
+    <div id="ob-med-list" style="margin-top:8px"></div>
+
+    <button class="btn btn-primary" id="ob2-btn" style="margin-top:16px" onclick="saveP2()">Continue</button>
   </div>
 </section>
 
@@ -271,6 +281,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     </div>
     <p class="sub" id="created-passport-id" style="font-weight:700;margin-bottom:14px;color:var(--navy);font-size:1.05rem;"></p>
     <button class="btn btn-primary" onclick="go('v-dash')">Go to Dashboard</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="lookupEmergency(state.profile.qr_token)">🚨 Preview Emergency Screen</button>
   </div>
 </section>
 
@@ -312,10 +323,55 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <p style="font-size:.88rem;line-height:1.9" id="pi-view"></p>
     <div style="display:flex;justify-content:space-between"><p class="section-title">Medical Conditions</p><a class="link" onclick="go('v-ob2')">Edit</a></div>
     <div id="pf-cond"></div>
-    <div style="display:flex;justify-content:space-between"><p class="section-title">Allergies</p></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <p class="section-title">Allergies</p>
+      <a class="link" id="pf-add-allergy-link" style="cursor:pointer" onclick="toggleAddAllergy()">+ Add Allergy</a>
+    </div>
     <div id="pf-allergies"></div>
-    <div style="display:flex;justify-content:space-between"><p class="section-title">Current Medications</p></div>
+    <!-- Add Allergy inline form -->
+    <div id="pf-add-allergy-box" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:8px;margin-bottom:14px">
+      <b style="font-size:0.85rem;color:var(--navy)">Add New Allergy</b>
+      <div style="margin-top:8px">
+        <label style="margin-top:4px">Allergy / Allergen *</label>
+        <input type="text" id="new-allergy-name" placeholder="e.g. Penicillin, Peanuts, Latex" onkeydown="if(event.key==='Enter'){event.preventDefault();submitAddAllergy();}">
+        <label style="margin-top:8px">Reaction / Severity (optional)</label>
+        <input type="text" id="new-allergy-reaction" placeholder="e.g. Severe rash, Anaphylaxis, Hives" onkeydown="if(event.key==='Enter'){event.preventDefault();submitAddAllergy();}">
+        <div id="allergy-form-error" style="color:var(--danger);font-size:0.78rem;font-weight:600;margin-top:6px;display:none"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn btn-primary" id="save-allergy-btn" style="padding:9px;font-size:0.82rem" onclick="submitAddAllergy()">Save Allergy</button>
+          <button class="btn btn-outline" style="width:auto;padding:9px 16px;font-size:0.82rem" onclick="toggleAddAllergy(false)">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <p class="section-title">Current Medications</p>
+      <a class="link" id="pf-add-med-link" style="cursor:pointer" onclick="toggleAddMedication()">+ Add Medication</a>
+    </div>
     <div id="pf-meds"></div>
+    <!-- Add Medication inline form -->
+    <div id="pf-add-med-box" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:8px;margin-bottom:14px">
+      <b style="font-size:0.85rem;color:var(--navy)">Add Active Medication</b>
+      <div style="margin-top:8px">
+        <label style="margin-top:4px">Medication Name *</label>
+        <input type="text" id="new-med-name" placeholder="e.g. Albuterol Inhaler, Lisinopril" onkeydown="if(event.key==='Enter'){event.preventDefault();submitAddMedication();}">
+        <div class="row" style="margin-top:8px">
+          <div style="flex:1">
+            <label style="margin-top:0">Dosage (optional)</label>
+            <input type="text" id="new-med-dosage" placeholder="e.g. 90mcg, 10mg">
+          </div>
+          <div style="flex:1">
+            <label style="margin-top:0">Frequency (optional)</label>
+            <input type="text" id="new-med-freq" placeholder="e.g. As needed, Daily">
+          </div>
+        </div>
+        <div id="med-form-error" style="color:var(--danger);font-size:0.78rem;font-weight:600;margin-top:6px;display:none"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn btn-primary" id="save-med-btn" style="padding:9px;font-size:0.82rem" onclick="submitAddMedication()">Save Medication</button>
+          <button class="btn btn-outline" style="width:auto;padding:9px 16px;font-size:0.82rem" onclick="toggleAddMedication(false)">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div style="display:flex;justify-content:space-between"><p class="section-title">Previous Procedures</p><a class="link" onclick="go('v-ob3')">Edit</a></div>
     <div id="pf-proc"></div>
   </div>
@@ -375,6 +431,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   <div class="card" style="margin-top:14px">
     <p class="section-title" style="margin-top:0">Medical Conditions</p><div id="em-cond"></div>
     <p class="section-title">Allergies</p><div id="em-allergies"></div>
+    <p class="section-title">Active Medications</p><div id="em-meds"></div>
     <p class="section-title">Emergency Contact</p><p id="em-contact"></p>
   </div>
   <button class="btn btn-primary" style="margin-top:16px" onclick="go('v-dash')">Done</button>
@@ -514,32 +571,101 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   </div>
 </section>
 
+<section class="view" id="v-emerg-scan" data-title="Emergency QR Scanner" data-nav="none">
+  <div class="card center">
+    <div style="font-size:2.8rem">🚨</div>
+    <h2 class="title" style="color:#e11d48">Emergency Medical Lookup</h2>
+    <p class="sub">Scan or enter a patient's MedTrace QR token to view critical emergency data immediately without requiring login.</p>
+    
+    <label style="text-align:left;display:block;margin:16px 0 6px;font-weight:700;">Patient QR Token</label>
+    <div class="row" style="margin-bottom:12px;">
+      <input type="text" id="emerg-token-input" placeholder="e.g. paste or scan qr_token" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupEmergency();}">
+      <button class="btn btn-danger" id="emerg-lookup-btn" style="width:auto;padding:0 20px;background:#e11d48;color:#fff;" onclick="lookupEmergency()">Lookup</button>
+    </div>
+    
+    <button class="btn btn-outline" style="width:100%;margin-bottom:10px;" onclick="simulateEmergencyScan()">Simulate Scan (Use Last Patient QR)</button>
+    <button class="btn btn-outline" style="width:100%;" onclick="exitEmergencyFlow()">Back</button>
+  </div>
+</section>
+
 <section class="view" id="v-emerg-consent" data-title="Emergency Access" data-nav="none">
   <div class="card center">
     <div style="font-size:2.6rem">🚨</div>
     <h2 class="title">The patient cannot provide consent</h2>
-    <p class="sub">Emergency access provides critical medical information needed for immediate care. This access is logged and reviewable by the patient.</p>
-    <button class="btn btn-danger" onclick="go('v-emerg-info')">Continue</button>
+    <p class="sub">Emergency access provides critical medical information needed for immediate care. This access is logged by the backend and reviewable by the patient.</p>
+    <button class="btn btn-danger" style="background:#e11d48;color:#fff;" onclick="lookupEmergency(state.scannedPatient ? state.scannedPatient.qr_token : '')">Continue to Emergency Information</button>
+    <button class="btn btn-outline" style="margin-top:10px;" onclick="exitEmergencyFlow()">Cancel</button>
   </div>
 </section>
 
-<section class="view" id="v-emerg-info" data-title="Emergency Info" data-nav="none">
-  <div class="warn-banner">⚠️ Allergies</div>
+<section class="view" id="v-emerg-info" data-title="Emergency Profile" data-nav="none">
   <div class="card">
-    <h2 class="title">Emergency Medical Information</h2>
-    <p class="section-title" style="margin-top:0">Medical Conditions</p><p>Asthma</p>
-    <p class="section-title">Allergies</p><p>Penicillin</p>
-    <p class="section-title">Emergency Contact</p><p>Next of kin — 555-0123</p>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="go('v-emerg-done')">Done</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span class="badge" style="background:#fee2e2;color:#991b1b;font-weight:800;font-size:0.8rem;padding:4px 10px;">🚨 EMERGENCY ACCESS</span>
+      <span id="emerg-access-time" class="sub" style="margin:0;font-size:0.75rem;"></span>
+    </div>
+    
+    <h2 class="title" id="emerg-title" style="margin-bottom:4px;">Emergency Medical Profile</h2>
+    <p class="sub" id="emerg-patient-sub" style="margin-top:0;margin-bottom:12px;color:var(--text);font-size:1.05rem;font-weight:700;"></p>
+
+    <!-- Critical Allergy Banner -->
+    <div id="emerg-allergy-banner" class="warn-banner" style="display:none;background:#fee2e2;color:#991b1b;border-color:#fca5a5;font-weight:700;margin-bottom:14px;"></div>
+
+    <!-- Loading State -->
+    <div id="emerg-loading" style="display:none;padding:24px 0;text-align:center;">
+      <p class="sub" style="margin:0;">Retrieving emergency medical information from backend...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="emerg-error" style="display:none;margin-bottom:14px;" class="warn-banner"></div>
+    <div id="emerg-error-actions" style="display:none;margin-top:14px;">
+      <button class="btn btn-danger" style="background:#e11d48;color:#fff;width:100%;margin-bottom:8px;" onclick="go('v-emerg-scan')">Scan Another QR</button>
+      <button class="btn btn-outline" style="width:100%;" onclick="exitEmergencyFlow()">Exit Emergency Mode</button>
+    </div>
+
+    <!-- Emergency Content -->
+    <div id="emerg-content">
+      <!-- Blood Group & Emergency Contact Box -->
+      <div style="background:var(--light-bg,#f8fafc);border:1px solid var(--border,#e2e8f0);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:600;">Blood Group:</span>
+          <span class="badge" id="emerg-blood-badge" style="background:#fee2e2;color:#991b1b;font-weight:800;font-size:0.95rem;padding:4px 12px;">Unknown</span>
+        </div>
+        <div class="divider" style="margin:8px 0;"></div>
+        <p class="section-title" style="margin:4px 0 6px 0;color:var(--blue);">📞 Emergency Contact</p>
+        <div id="emerg-contact-box">
+          <p class="sub" style="margin:0;">None specified</p>
+        </div>
+      </div>
+
+      <!-- Allergies -->
+      <p class="section-title" style="margin-top:14px;color:#b91c1c;font-weight:700;">⚠️ Allergies</p>
+      <div id="emerg-allergies-list"><p class="sub" style="margin:0">None reported</p></div>
+
+      <!-- Current Medications -->
+      <p class="section-title" style="margin-top:14px;">💊 Active Medications</p>
+      <div id="emerg-meds-list"><p class="sub" style="margin:0">None reported</p></div>
+
+      <!-- Major Conditions -->
+      <p class="section-title" style="margin-top:14px;">🩺 Major Conditions</p>
+      <div id="emerg-conditions-list"><p class="sub" style="margin:0">None reported</p></div>
+
+      <!-- Major Procedures -->
+      <p class="section-title" style="margin-top:14px;">🏥 Major Procedures</p>
+      <div id="emerg-procedures-list"><p class="sub" style="margin:0">None reported</p></div>
+
+      <button class="btn btn-primary" id="emerg-done-btn" style="margin-top:20px" onclick="exitEmergencyFlow()">Done / Close</button>
+      <button class="btn btn-outline" id="emerg-rescan-btn" style="margin-top:8px" onclick="go('v-emerg-scan')">Scan Another Patient QR</button>
+    </div>
   </div>
 </section>
 
 <section class="view" id="v-emerg-done" data-title="Access Recorded" data-nav="none">
   <div class="card center">
     <div style="font-size:2.6rem">✅</div>
-    <h2 class="title">Emergency Access Recorded</h2>
-    <p class="sub">XYZ Hospital accessed this patient's emergency profile. The patient will see this in their access history.</p>
-    <button class="btn btn-primary" onclick="go('v-pdash')">Done</button>
+    <h2 class="title">Emergency Access Logged</h2>
+    <p class="sub" id="emerg-done-sub">Emergency access to this patient's critical medical profile was recorded by the backend and will be visible in their audit history.</p>
+    <button class="btn btn-primary" onclick="exitEmergencyFlow()">Done</button>
   </div>
 </section>
 </template>
@@ -563,9 +689,11 @@ const state = {
     dob:'',blood:'Select',contact:'',
     passport_id: savedPassportId
   },
-  conditions:[], procedures:[],
+  conditions:[], procedures:[], allergies:[], medications:[],
   savedConditions: new Set(),
   savedProcedures: new Set(),
+  savedAllergies: new Set(),
+  savedMedications: new Set(),
   dashboard: null,
   records: null,
   providerDashboard: null,
@@ -577,6 +705,8 @@ const state = {
   activePatientId: null,
   activePatientName: '',
   providerPatientRecords: null,
+  emergencyProfile: null,
+  emergencyToken: '',
   history:[
     {org:'XYZ Hospital',doc:'Dr. Ahmed',items:'Conditions, Allergies, Medication',date:'2 days ago'},
     {org:'ABC Hospital',doc:'Dr. Sarah',items:'Conditions, Vitals, Medication',date:'1 week ago'}
@@ -729,6 +859,8 @@ function logout() {
   state.activePatientId = null;
   state.activePatientName = '';
   state.providerPatientRecords = null;
+  state.emergencyProfile = null;
+  state.emergencyToken = '';
   localStorage.removeItem('medtrace_token');
   localStorage.removeItem('medtrace_user');
   localStorage.removeItem('medtrace_passport_id');
@@ -1120,6 +1252,14 @@ async function loadPatientRecords() {
         state.conditions = data.conditions.map(c => c.name);
         data.conditions.forEach(c => state.savedConditions.add(c.name));
       }
+      if (Array.isArray(data.allergies)) {
+        state.allergies = data.allergies;
+        data.allergies.forEach(a => state.savedAllergies.add(a.name || a.allergen));
+      }
+      if (Array.isArray(data.medications)) {
+        state.medications = data.medications;
+        data.medications.forEach(m => state.savedMedications.add(m.name));
+      }
       if (Array.isArray(data.procedures)) {
         state.procedures = data.procedures.map(p => p.name + (p.performed_on ? ' - ' + p.performed_on : ''));
         data.procedures.forEach(p => state.savedProcedures.add(p.name));
@@ -1157,9 +1297,14 @@ function renderRecordsUI(data) {
 
   const pfAllergies = document.getElementById('pf-allergies');
   if (pfAllergies) {
-    const allergies = (data && data.allergies) || [];
+    const rawAllergies = (data && data.allergies) || (state.records && state.records.allergies) || state.allergies || [];
+    const allergies = rawAllergies.filter(a => a && (a.name || a.allergen));
     if (allergies.length) {
-      pfAllergies.innerHTML = allergies.map(a => `<span class="chip">${a.allergen}${a.severity ? ' (' + a.severity + ')' : ''}</span>`).join('');
+      pfAllergies.innerHTML = allergies.map(a => {
+        const name = a.name || a.allergen;
+        const reaction = a.reaction || a.severity;
+        return `<span class="chip" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;font-weight:600">⚠️ ${name}${reaction ? ' (' + reaction + ')' : ''}</span>`;
+      }).join('');
     } else {
       pfAllergies.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
     }
@@ -1167,9 +1312,15 @@ function renderRecordsUI(data) {
 
   const pfMeds = document.getElementById('pf-meds');
   if (pfMeds) {
-    const meds = (data && data.medications) || [];
+    const rawMeds = (data && data.medications) || (state.records && state.records.medications) || state.medications || [];
+    const meds = rawMeds.filter(m => m && m.name);
     if (meds.length) {
-      pfMeds.innerHTML = meds.map(m => `<span class="chip">${m.name}${m.dosage ? ' - ' + m.dosage : ''}${m.frequency ? ' (' + m.frequency + ')' : ''}</span>`).join('');
+      pfMeds.innerHTML = meds.map(m => {
+        const name = m.name;
+        const dose = m.dosage ? ' - ' + m.dosage : '';
+        const freq = m.frequency ? ' (' + m.frequency + ')' : '';
+        return `<span class="chip" style="background:#e0f2fe;border-color:#bae6fd;color:#0369a1;font-weight:600">💊 ${name}${dose}${freq}</span>`;
+      }).join('');
     } else {
       pfMeds.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
     }
@@ -1197,11 +1348,32 @@ function renderRecordsUI(data) {
 
   const emAllergies = document.getElementById('em-allergies');
   if (emAllergies) {
-    const allergies = (data && data.allergies) || [];
+    const rawAllergies = (data && data.allergies) || (state.records && state.records.allergies) || state.allergies || [];
+    const allergies = rawAllergies.filter(a => a && (a.name || a.allergen));
     if (allergies.length) {
-      emAllergies.innerHTML = allergies.map(a => `<p>${a.allergen}${a.severity ? ' (' + a.severity + ')' : ''}</p>`).join('');
+      emAllergies.innerHTML = allergies.map(a => {
+        const name = a.name || a.allergen;
+        const reaction = a.reaction || a.severity;
+        return `<p>⚠️ ${name}${reaction ? ' (' + reaction + ')' : ''}</p>`;
+      }).join('');
     } else {
       emAllergies.innerHTML = '<p>None reported</p>';
+    }
+  }
+
+  const emMeds = document.getElementById('em-meds');
+  if (emMeds) {
+    const rawMeds = (data && data.medications) || (state.records && state.records.medications) || state.medications || [];
+    const meds = rawMeds.filter(m => m && m.name);
+    if (meds.length) {
+      emMeds.innerHTML = meds.map(m => {
+        const name = m.name;
+        const dose = m.dosage ? ' ' + m.dosage : '';
+        const freq = m.frequency ? ' (' + m.frequency + ')' : '';
+        return `<p>💊 ${name}${dose}${freq}</p>`;
+      }).join('');
+    } else {
+      emMeds.innerHTML = '<p>None reported</p>';
     }
   }
 
@@ -1805,6 +1977,273 @@ function renderAccessHistoryUI(data) {
   }).join('');
 }
 
+/* ---- Group 8: Emergency QR Access ---- */
+async function fetchEmergencyProfile(qrToken) {
+  if (!qrToken) {
+    throw new Error('Missing emergency QR token');
+  }
+
+  const primaryBase = getApiBaseUrl();
+  const url = `${primaryBase}/api/emergency/${encodeURIComponent(qrToken)}`;
+
+  // CRITICAL SECURITY REQUIREMENT:
+  // Intentionally unauthenticated request: DO NOT attach Authorization header or JWT
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json'
+    }
+  });
+
+  if (!res.ok) {
+    let errMsg = `Emergency lookup failed (${res.status})`;
+    try {
+      const errJson = await res.json();
+      if (errJson && errJson.detail) errMsg = errJson.detail;
+    } catch (e) {}
+    throw new Error(errMsg);
+  }
+
+  return await res.json();
+}
+
+function setEmergencyLoading(isLoading) {
+  const loadingEl = document.getElementById('emerg-loading');
+  const contentEl = document.getElementById('emerg-content');
+  const errorEl = document.getElementById('emerg-error');
+  const errorActionsEl = document.getElementById('emerg-error-actions');
+  const doneBtn = document.getElementById('emerg-done-btn');
+  const rescanBtn = document.getElementById('emerg-rescan-btn');
+
+  if (loadingEl) loadingEl.style.display = isLoading ? 'block' : 'none';
+  if (contentEl) contentEl.style.display = isLoading ? 'none' : 'block';
+  if (errorEl && isLoading) errorEl.style.display = 'none';
+  if (errorActionsEl && isLoading) errorActionsEl.style.display = 'none';
+  if (doneBtn) doneBtn.disabled = isLoading;
+  if (rescanBtn) rescanBtn.disabled = isLoading;
+}
+
+function renderEmergencyError(errorMessage) {
+  const contentEl = document.getElementById('emerg-content');
+  if (contentEl) contentEl.style.display = 'none';
+
+  const errorEl = document.getElementById('emerg-error');
+  if (errorEl) {
+    errorEl.textContent = `⚠️ Emergency Record Not Found: ${errorMessage}`;
+    errorEl.style.display = 'block';
+  }
+
+  const errorActionsEl = document.getElementById('emerg-error-actions');
+  if (errorActionsEl) {
+    errorActionsEl.style.display = 'block';
+  }
+
+  const subEl = document.getElementById('emerg-patient-sub');
+  if (subEl) {
+    subEl.textContent = 'Patient record unavailable';
+  }
+
+  toast(errorMessage);
+}
+
+function renderEmergencyInfoUI(data) {
+  if (!data) return;
+
+  const errorEl = document.getElementById('emerg-error');
+  if (errorEl) errorEl.style.display = 'none';
+
+  const errorActionsEl = document.getElementById('emerg-error-actions');
+  if (errorActionsEl) errorActionsEl.style.display = 'none';
+
+  const contentEl = document.getElementById('emerg-content');
+  if (contentEl) contentEl.style.display = 'block';
+
+  // 1. Patient Subtitle & Access Time
+  const patientSub = document.getElementById('emerg-patient-sub');
+  if (patientSub) {
+    patientSub.textContent = `Patient: ${data.patient_name || 'Emergency Patient'}`;
+  }
+
+  const accessTimeEl = document.getElementById('emerg-access-time');
+  if (accessTimeEl) {
+    try {
+      const d = data.accessed_at ? new Date(data.accessed_at) : new Date();
+      accessTimeEl.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString();
+    } catch (e) {
+      accessTimeEl.textContent = data.accessed_at || '';
+    }
+  }
+
+  // 2. Blood Group Badge
+  const bloodBadge = document.getElementById('emerg-blood-badge');
+  if (bloodBadge) {
+    bloodBadge.textContent = data.blood_group ? `Type: ${data.blood_group}` : 'Unknown';
+  }
+
+  // 3. Critical Allergies Banner
+  const allergyBanner = document.getElementById('emerg-allergy-banner');
+  if (allergyBanner) {
+    const rawAllergies = Array.isArray(data.allergies) ? data.allergies : [];
+    const allergies = rawAllergies.filter(a => a && (a.name || a.allergen));
+    if (allergies.length > 0) {
+      const listStr = allergies.map(a => `${a.name || a.allergen}${a.reaction ? ' (' + a.reaction + ')' : (a.severity ? ' (' + a.severity + ')' : '')}`).join(', ');
+      allergyBanner.innerHTML = `⚠️ CRITICAL ALLERGIES DETECTED: <b>${listStr}</b>`;
+      allergyBanner.style.display = 'block';
+    } else {
+      allergyBanner.style.display = 'none';
+    }
+  }
+
+  // 4. Emergency Contact
+  const contactBox = document.getElementById('emerg-contact-box');
+  if (contactBox) {
+    const cName = data.emergency_contact_name;
+    const cPhone = data.emergency_contact_phone;
+    if (cName || cPhone) {
+      contactBox.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <b>${cName || 'Next of Kin / Contact'}</b><br>
+            <span class="sub" style="margin:0">${cPhone || 'No phone provided'}</span>
+          </div>
+          ${cPhone ? `<a href="tel:${cPhone}" class="btn btn-primary" style="display:inline-block;width:auto;padding:6px 16px;text-decoration:none;font-size:0.85rem;">📞 Call Now</a>` : ''}
+        </div>
+      `;
+    } else {
+      contactBox.innerHTML = '<p class="sub" style="margin:0">No emergency contact on file</p>';
+    }
+  }
+
+  // 5. Allergies List
+  const allergiesList = document.getElementById('emerg-allergies-list');
+  if (allergiesList) {
+    const rawAllergies = Array.isArray(data.allergies) ? data.allergies : [];
+    const allergies = rawAllergies.filter(a => a && (a.name || a.allergen));
+    if (allergies.length > 0) {
+      allergiesList.innerHTML = allergies.map(a => {
+        const name = a.name || a.allergen;
+        const reaction = a.reaction || a.severity;
+        return `
+          <span class="chip" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;font-weight:700;margin-right:6px;margin-bottom:6px;display:inline-block;">
+            ⚠️ ${name}${reaction ? ' (' + reaction + ')' : ''}
+          </span>
+        `;
+      }).join('');
+    } else {
+      allergiesList.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
+    }
+  }
+
+  // 6. Active Medications
+  const medsList = document.getElementById('emerg-meds-list');
+  if (medsList) {
+    const rawMeds = Array.isArray(data.medications) ? data.medications : [];
+    const meds = rawMeds.filter(m => m && m.name);
+    if (meds.length > 0) {
+      medsList.innerHTML = meds.map(m => `
+        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-block;">
+          💊 ${m.name}${m.dosage ? ' ' + m.dosage : ''}${m.frequency ? ' (' + m.frequency + ')' : ''}
+        </span>
+      `).join('');
+    } else {
+      medsList.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
+    }
+  }
+
+  // 7. Major Conditions
+  const condsList = document.getElementById('emerg-conditions-list');
+  if (condsList) {
+    const conds = Array.isArray(data.major_conditions) ? data.major_conditions : [];
+    if (conds.length > 0) {
+      condsList.innerHTML = conds.map(c => `
+        <span class="chip" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;font-weight:700;margin-right:6px;margin-bottom:6px;display:inline-block;">
+          🩺 ${c.name || 'Condition'}${c.diagnosed_date ? ' (' + c.diagnosed_date + ')' : ''}
+        </span>
+      `).join('');
+    } else {
+      condsList.innerHTML = '<p class="sub" style="margin:0">No major conditions recorded</p>';
+    }
+  }
+
+  // 8. Major Procedures
+  const procsList = document.getElementById('emerg-procedures-list');
+  if (procsList) {
+    const procs = Array.isArray(data.major_procedures) ? data.major_procedures : [];
+    if (procs.length > 0) {
+      procsList.innerHTML = procs.map(p => `
+        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-block;">
+          🏥 ${p.name || 'Procedure'}${p.performed_on ? ' (' + p.performed_on + ')' : ''}${p.facility ? ' @ ' + p.facility : ''}
+        </span>
+      `).join('');
+    } else {
+      procsList.innerHTML = '<p class="sub" style="margin:0">No major procedures recorded</p>';
+    }
+  }
+
+  // Update done view subtitle
+  const emergDoneSub = document.getElementById('emerg-done-sub');
+  if (emergDoneSub) {
+    emergDoneSub.textContent = `Emergency access to ${data.patient_name || 'the patient'}'s critical profile was logged by the backend and will be visible in their audit history.`;
+  }
+}
+
+async function lookupEmergency(customToken) {
+  const inp = document.getElementById('emerg-token-input');
+  let token = customToken || (inp ? inp.value.trim() : '');
+
+  if (!token) {
+    token = state.emergencyToken || (state.scannedPatient ? state.scannedPatient.qr_token : '') || (state.profile ? state.profile.qr_token : '') || localStorage.getItem('medtrace_last_qr_token') || '';
+  }
+
+  if (!token) {
+    toast('Please enter or scan a valid QR token');
+    go('v-emerg-scan');
+    return;
+  }
+
+  state.emergencyToken = token;
+  go('v-emerg-info');
+  setEmergencyLoading(true);
+
+  try {
+    const data = await fetchEmergencyProfile(token);
+    state.emergencyProfile = data;
+    renderEmergencyInfoUI(data);
+    setEmergencyLoading(false);
+    toast(`✓ Emergency profile retrieved: ${data.patient_name || 'Patient'}`);
+  } catch (err) {
+    console.error('Emergency lookup error:', err);
+    setEmergencyLoading(false);
+    renderEmergencyError(err.message || 'Emergency record not found');
+  }
+}
+
+function simulateEmergencyScan() {
+  const token = (state.scannedPatient && state.scannedPatient.qr_token)
+    || (state.profile && state.profile.qr_token)
+    || localStorage.getItem('medtrace_last_qr_token');
+
+  if (!token) {
+    toast('No saved QR token found to simulate. Please paste a token.');
+    return;
+  }
+  const inp = document.getElementById('emerg-token-input');
+  if (inp) inp.value = token;
+  lookupEmergency(token);
+}
+
+function exitEmergencyFlow() {
+  if (state.auth && state.auth.token) {
+    if (state.role === 'provider') {
+      go('v-pdash');
+    } else {
+      go('v-dash');
+    }
+  } else {
+    go('v-welcome', true);
+  }
+}
+
 async function loadPatientProfile(){
   return await loadPatientDashboard();
 }
@@ -1906,6 +2345,246 @@ async function addCondition(){
   }
 }
 
+/* ---- Group 9: Patient Allergies & Active Medications ---- */
+
+function toggleAddAllergy(show) {
+  const box = document.getElementById('pf-add-allergy-box');
+  const link = document.getElementById('pf-add-allergy-link');
+  const err = document.getElementById('allergy-form-error');
+  if (err) err.style.display = 'none';
+  if (!box) return;
+  const isOpening = show !== undefined ? Boolean(show) : (box.style.display === 'none' || !box.style.display);
+  box.style.display = isOpening ? 'block' : 'none';
+  if (link) link.textContent = isOpening ? '✕ Close' : '+ Add Allergy';
+  if (isOpening) {
+    const inp = document.getElementById('new-allergy-name');
+    if (inp) setTimeout(() => inp.focus(), 50);
+  }
+}
+
+function toggleAddMedication(show) {
+  const box = document.getElementById('pf-add-med-box');
+  const link = document.getElementById('pf-add-med-link');
+  const err = document.getElementById('med-form-error');
+  if (err) err.style.display = 'none';
+  if (!box) return;
+  const isOpening = show !== undefined ? Boolean(show) : (box.style.display === 'none' || !box.style.display);
+  box.style.display = isOpening ? 'block' : 'none';
+  if (link) link.textContent = isOpening ? '✕ Close' : '+ Add Medication';
+  if (isOpening) {
+    const inp = document.getElementById('new-med-name');
+    if (inp) setTimeout(() => inp.focus(), 50);
+  }
+}
+
+async function submitAddAllergy() {
+  const nameInp = document.getElementById('new-allergy-name');
+  const reactInp = document.getElementById('new-allergy-reaction');
+  const btn = document.getElementById('save-allergy-btn');
+  const errEl = document.getElementById('allergy-form-error');
+
+  const name = nameInp ? nameInp.value.trim() : '';
+  const reaction = reactInp ? reactInp.value.trim() : '';
+
+  if (!name) {
+    if (errEl) {
+      errEl.textContent = 'Please enter an allergy or allergen name.';
+      errEl.style.display = 'block';
+    }
+    if (nameInp) nameInp.focus();
+    return;
+  }
+  if (errEl) errEl.style.display = 'none';
+
+  // Prevent duplicate submissions while request is pending
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+
+  try {
+    const created = await apiRequest('/api/patient/allergies', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: name,
+        reaction: reaction || null
+      })
+    });
+
+    const item = created || { name, reaction };
+    if (!state.records) state.records = {};
+    if (!Array.isArray(state.records.allergies)) state.records.allergies = [];
+    state.records.allergies.push(item);
+
+    if (!Array.isArray(state.allergies)) state.allergies = [];
+    state.allergies.push(item);
+    state.savedAllergies.add(name);
+
+    if (nameInp) nameInp.value = '';
+    if (reactInp) reactInp.value = '';
+    toggleAddAllergy(false);
+
+    renderRecordsUI(state.records);
+    toast(`✓ Allergy "${name}" added successfully`);
+
+    // Silently refresh authoritative records from server
+    loadPatientRecords();
+  } catch (err) {
+    console.error('Failed to add allergy:', err);
+    if (errEl) {
+      errEl.textContent = err.message || 'Failed to add allergy. Please try again.';
+      errEl.style.display = 'block';
+    }
+    toast(err.message || 'Failed to add allergy');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save Allergy';
+    }
+  }
+}
+
+async function submitAddMedication() {
+  const nameInp = document.getElementById('new-med-name');
+  const doseInp = document.getElementById('new-med-dosage');
+  const freqInp = document.getElementById('new-med-freq');
+  const btn = document.getElementById('save-med-btn');
+  const errEl = document.getElementById('med-form-error');
+
+  const name = nameInp ? nameInp.value.trim() : '';
+  const dosage = doseInp ? doseInp.value.trim() : '';
+  const frequency = freqInp ? freqInp.value.trim() : '';
+
+  if (!name) {
+    if (errEl) {
+      errEl.textContent = 'Please enter a medication name.';
+      errEl.style.display = 'block';
+    }
+    if (nameInp) nameInp.focus();
+    return;
+  }
+  if (errEl) errEl.style.display = 'none';
+
+  // Prevent duplicate submissions while request is pending
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+
+  try {
+    const created = await apiRequest('/api/patient/medications', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: name,
+        dosage: dosage || null,
+        frequency: frequency || null,
+        active: true
+      })
+    });
+
+    const item = created || { name, dosage, frequency, active: true };
+    if (!state.records) state.records = {};
+    if (!Array.isArray(state.records.medications)) state.records.medications = [];
+    state.records.medications.push(item);
+
+    if (!Array.isArray(state.medications)) state.medications = [];
+    state.medications.push(item);
+    state.savedMedications.add(name);
+
+    if (nameInp) nameInp.value = '';
+    if (doseInp) doseInp.value = '';
+    if (freqInp) freqInp.value = '';
+    toggleAddMedication(false);
+
+    renderRecordsUI(state.records);
+    toast(`✓ Medication "${name}" added successfully`);
+
+    // Silently refresh authoritative records from server
+    loadPatientRecords();
+  } catch (err) {
+    console.error('Failed to add medication:', err);
+    if (errEl) {
+      errEl.textContent = err.message || 'Failed to add medication. Please try again.';
+      errEl.style.display = 'block';
+    }
+    toast(err.message || 'Failed to add medication');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save Medication';
+    }
+  }
+}
+
+/* Onboarding Step 2 helpers */
+async function addObAllergy() {
+  const inp = document.getElementById('ob-allergy-input');
+  const val = inp ? inp.value.trim() : '';
+  if (!val) return;
+
+  let name = val;
+  let reaction = null;
+  const match = val.match(/^(.*?)[-\s,:(]+(.*?)\)?$/);
+  if (match && match[2].trim()) {
+    name = match[1].trim();
+    reaction = match[2].trim().replace(/\)$/, '');
+  }
+
+  const addBtn = document.getElementById('ob-add-allergy-btn');
+  if (addBtn) addBtn.textContent = 'Saving...';
+  inp.value = '';
+
+  try {
+    const res = await apiRequest('/api/patient/allergies', {
+      method: 'POST',
+      body: JSON.stringify({ name, reaction })
+    });
+    const item = res || { name, reaction };
+    state.allergies.push(item);
+    state.savedAllergies.add(name);
+    renderChips('ob-allergy-list', state.allergies.map(a => `${a.name || a.allergen || 'Allergy'}${a.reaction ? ' (' + a.reaction + ')' : ''}`));
+    toast(`✓ Allergy "${name}" saved`);
+  } catch (err) {
+    toast(err.message || 'Failed to save allergy');
+  } finally {
+    if (addBtn) addBtn.textContent = 'Add';
+  }
+}
+
+async function addObMedication() {
+  const inp = document.getElementById('ob-med-input');
+  const val = inp ? inp.value.trim() : '';
+  if (!val) return;
+
+  let name = val;
+  let dosage = null;
+  const match = val.match(/^(.*?)[-\s,]+(.*?)$/);
+  if (match && match[2].trim()) {
+    name = match[1].trim();
+    dosage = match[2].trim();
+  }
+
+  const addBtn = document.getElementById('ob-add-med-btn');
+  if (addBtn) addBtn.textContent = 'Saving...';
+  inp.value = '';
+
+  try {
+    const res = await apiRequest('/api/patient/medications', {
+      method: 'POST',
+      body: JSON.stringify({ name, dosage, active: true })
+    });
+    const item = res || { name, dosage, active: true };
+    state.medications.push(item);
+    state.savedMedications.add(name);
+    renderChips('ob-med-list', state.medications.map(m => `${m.name || 'Medication'}${m.dosage ? ' - ' + m.dosage : ''}`));
+    toast(`✓ Medication "${name}" saved`);
+  } catch (err) {
+    toast(err.message || 'Failed to save medication');
+  } finally {
+    if (addBtn) addBtn.textContent = 'Add';
+  }
+}
+
 async function saveP2(){
   const inp = document.getElementById('cond-input');
   if (inp && inp.value.trim() && !inp.disabled) {
@@ -1915,6 +2594,16 @@ async function saveP2(){
     }
     inp.value = '';
     renderChips('cond-list', state.conditions);
+  }
+
+  const aInp = document.getElementById('ob-allergy-input');
+  if (aInp && aInp.value.trim()) {
+    await addObAllergy();
+  }
+
+  const mInp = document.getElementById('ob-med-input');
+  if (mInp && mInp.value.trim()) {
+    await addObMedication();
   }
 
   const btn = document.getElementById('ob2-btn');
@@ -1934,7 +2623,7 @@ async function saveP2(){
         state.savedConditions.add(c);
       }
     }
-    toast('✓ Medical conditions saved');
+    toast('✓ Medical details saved');
     go('v-ob3');
   } catch (err) {
     toast(err.message || 'Failed to save conditions');
@@ -2100,11 +2789,22 @@ function renderDynamic(id){
     if(pContact && !pContact.value && state.profile.contact){ pContact.value = state.profile.contact; }
   }
   if(id==='v-review'){
+    const allergiesText = (state.allergies && state.allergies.length)
+      ? state.allergies.map(a => `${a.name || a.allergen || 'Allergy'}${a.reaction ? ' (' + a.reaction + ')' : ''}`).join(', ')
+      : 'None reported';
+    const medsText = (state.medications && state.medications.length)
+      ? state.medications.map(m => `${m.name || 'Medication'}${m.dosage ? ' - ' + m.dosage : ''}${m.frequency ? ' (' + m.frequency + ')' : ''}`).join(', ')
+      : 'None reported';
+
     document.getElementById('review-body').innerHTML = `
       <p class="section-title" style="margin-top:0">Personal Information</p>
       <p style="font-size:.88rem">Name: ${state.profile.name||'—'}<br>DOB: ${state.profile.dob||'—'}<br>Blood group: ${state.profile.blood||'—'}</p>
       <p class="section-title">Medical Conditions</p>
       <p style="font-size:.88rem">${state.conditions.join(', ')||'None reported'}</p>
+      <p class="section-title">Allergies</p>
+      <p style="font-size:.88rem">${allergiesText}</p>
+      <p class="section-title">Current Medications</p>
+      <p style="font-size:.88rem">${medsText}</p>
       <p class="section-title">Previous Procedures</p>
       <p style="font-size:.88rem">${state.procedures.join(', ')||'None added'}</p>
       <p class="section-title">Emergency Contact</p>
@@ -2194,12 +2894,40 @@ function renderDynamic(id){
       }
     }
   }
+  if(id==='v-emerg-scan'){
+    const inp = document.getElementById('emerg-token-input');
+    const lastToken = localStorage.getItem('medtrace_last_qr_token') || (state.profile ? state.profile.qr_token : '');
+    if(inp && !inp.value && lastToken){
+      inp.value = lastToken;
+    }
+  }
+  if(id==='v-emerg-info'){
+    if (state.emergencyProfile) {
+      renderEmergencyInfoUI(state.emergencyProfile);
+    } else if (state.emergencyToken) {
+      lookupEmergency(state.emergencyToken);
+    }
+  }
 }
 
 /* ---- boot ---- */
 document.getElementById('viewport').appendChild(document.getElementById('tpl-views').content.cloneNode(true));
 buildNav();
-if (state.auth && state.auth.token) {
+
+/* Check for direct emergency lookup via URL parameter or hash */
+const urlParams = new URLSearchParams(window.location.search);
+const hash = window.location.hash || '';
+let emergencyToken = urlParams.get('emergency') || urlParams.get('qr_token');
+if (!emergencyToken && hash.includes('emergency/')) {
+  emergencyToken = hash.split('emergency/')[1].split('?')[0].trim();
+} else if (!emergencyToken && hash.includes('emergency=')) {
+  emergencyToken = hash.split('emergency=')[1].split('&')[0].trim();
+}
+
+if (emergencyToken) {
+  // CRITICAL: Unauthenticated Emergency Flow directly accessible without login
+  lookupEmergency(emergencyToken);
+} else if (state.auth && state.auth.token) {
   if (state.role === 'patient') {
     loadPatientDashboard();
     loadPatientRecords();
