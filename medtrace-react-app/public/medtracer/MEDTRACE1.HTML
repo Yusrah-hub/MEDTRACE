@@ -348,8 +348,24 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 </section>
 
 <section class="view" id="v-history" data-title="Access History" data-nav="history">
-  <h2 class="title">Access History</h2>
-  <div class="card" style="margin-top:14px"><div id="history-list"></div></div>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <h2 class="title" style="margin:0">Access History</h2>
+    <button class="btn btn-outline" style="width:auto;padding:6px 12px;font-size:0.8rem;margin:0" onclick="loadPatientAccessHistory(true)">↻ Refresh</button>
+  </div>
+  <p class="sub" style="margin-top:4px;margin-bottom:12px">Real-time audit log of healthcare providers who accessed your medical records</p>
+  
+  <div class="card" style="margin-top:10px">
+    <p class="section-title" style="margin-top:0">Record Access Logs (Audit Trail)</p>
+    <div id="history-loading" style="display:none;padding:12px 0;text-align:center;">
+      <p class="sub" style="margin:0">Loading access history...</p>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <div class="card" style="margin-top:14px" id="consent-history-card">
+    <p class="section-title" style="margin-top:0">Consent Requests History</p>
+    <div id="consent-history-list"></div>
+  </div>
 </section>
 
 <!-- ===================== EMERGENCY (patient-facing read-only) ===================== -->
@@ -555,6 +571,7 @@ const state = {
   providerDashboard: null,
   scannedPatient: null,
   accessRequests: [],
+  accessHistory: [],
   activeRequestId: null,
   lastSentRequest: null,
   activePatientId: null,
@@ -706,6 +723,7 @@ function logout() {
   state.providerDashboard = null;
   state.scannedPatient = null;
   state.accessRequests = [];
+  state.accessHistory = [];
   state.activeRequestId = null;
   state.lastSentRequest = null;
   state.activePatientId = null;
@@ -850,6 +868,8 @@ async function handleLogin(event, expectedRole) {
       loadPatientDashboard();
       loadPatientRecords();
       loadPatientQrImage();
+      loadAccessRequests();
+      loadPatientAccessHistory();
       go('v-dash', true);
     }
   } catch (err) {
@@ -1448,11 +1468,11 @@ function renderAccessRequestsUI(requests = state.accessRequests) {
     }
   }
 
-  // 3. History List (v-history)
-  const histList = document.getElementById('history-list');
-  if (histList) {
+  // 3. Consent Requests History (v-history)
+  const consentHistList = document.getElementById('consent-history-list');
+  if (consentHistList) {
     if (decidedRequests.length > 0) {
-      histList.innerHTML = decidedRequests.map(h => `
+      consentHistList.innerHTML = decidedRequests.map(h => `
         <div class="list-item">
           <div>
             <b>${h.provider_name || 'Healthcare Provider'}</b><br>
@@ -1462,7 +1482,7 @@ function renderAccessRequestsUI(requests = state.accessRequests) {
         </div>
       `).join('');
     } else {
-      histList.innerHTML = '<p class="sub" style="margin:10px 0">No past access requests recorded yet.</p>';
+      consentHistList.innerHTML = '<p class="sub" style="margin:10px 0">No past consent decisions recorded yet.</p>';
     }
   }
 }
@@ -1699,6 +1719,90 @@ async function loadProviderPatientRecords(patientId, patientName) {
     renderProviderPatientRecordsError(err.message || 'Patient access has not been approved');
     return null;
   }
+}
+
+/* ---- Group 7: Patient Access History ---- */
+async function loadPatientAccessHistory(showToast = false) {
+  if (!state.auth || !state.auth.token || state.role !== 'patient') return [];
+
+  const loadingEl = document.getElementById('history-loading');
+  if (loadingEl && (!state.accessHistory || state.accessHistory.length === 0)) {
+    loadingEl.style.display = 'block';
+  }
+
+  try {
+    const data = await apiRequest('/api/patient/access-history');
+    if (Array.isArray(data)) {
+      state.accessHistory = data;
+      renderAccessHistoryUI(data);
+      if (showToast) {
+        toast(`Access history updated: ${data.length} event(s)`);
+      }
+      return data;
+    }
+    return [];
+  } catch (err) {
+    console.error('Failed to load access history:', err);
+    const histList = document.getElementById('history-list');
+    if (histList && (!state.accessHistory || state.accessHistory.length === 0)) {
+      histList.innerHTML = `<p class="sub" style="margin:10px 0;color:var(--warn)">Failed to load access history: ${err.message || 'Network error'}</p>`;
+    }
+    if (showToast) {
+      toast(err.message || 'Failed to load access history');
+    }
+    return [];
+  } finally {
+    if (loadingEl) {
+      loadingEl.style.display = 'none';
+    }
+  }
+}
+
+function formatAccessType(type) {
+  if (!type) return 'Record Access';
+  if (type === 'full_record') return 'Full Medical Records Access';
+  if (type === 'emergency') return 'Emergency Medical Access';
+  if (type === 'summary') return 'Summary Information Access';
+  return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function renderAccessHistoryUI(data) {
+  const histList = document.getElementById('history-list');
+  if (!histList) return;
+
+  const logs = Array.isArray(data) ? data : (state.accessHistory || []);
+
+  if (logs.length === 0) {
+    histList.innerHTML = '<p class="sub" style="margin:10px 0">No access history recorded yet. When healthcare providers access your records, it will be logged here in real time.</p>';
+    return;
+  }
+
+  histList.innerHTML = logs.map(h => {
+    const provider = h.provider_name || 'Healthcare Provider';
+    const accessDesc = formatAccessType(h.access_type);
+    let dateStr = 'Recently';
+    if (h.created_at) {
+      try {
+        const d = new Date(h.created_at);
+        dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        dateStr = h.created_at;
+      }
+    }
+    const isEmergency = (h.access_type || '').toLowerCase() === 'emergency';
+    const badgeClass = isEmergency ? 'warn' : 'ok';
+    const badgeText = isEmergency ? 'Emergency' : 'Accessed';
+
+    return `
+      <div class="list-item">
+        <div>
+          <b>${provider}</b><br>
+          <span class="sub" style="margin:0">${accessDesc} &middot; ${dateStr}</span>
+        </div>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 async function loadPatientProfile(){
@@ -2053,6 +2157,8 @@ function renderDynamic(id){
     }
   }
   if(id==='v-history'){
+    renderAccessHistoryUI(state.accessHistory);
+    loadPatientAccessHistory();
     renderAccessRequestsUI(state.accessRequests);
     loadAccessRequests();
   }
@@ -2099,6 +2205,7 @@ if (state.auth && state.auth.token) {
     loadPatientRecords();
     loadPatientQrImage();
     loadAccessRequests();
+    loadPatientAccessHistory();
   } else if (state.role === 'provider') {
     loadProviderDashboard();
   }
