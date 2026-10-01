@@ -424,6 +424,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <div class="list-item"><span>Blood Group</span><b id="pfound-blood">—</b></div>
     <div class="list-item"><span>Emergency Mode</span><b id="pfound-emergency">—</b></div>
     <button class="btn btn-primary" style="margin-top:16px" onclick="go('v-preq')">Request Access</button>
+    <button class="btn btn-outline" id="pfound-view-btn" style="margin-top:10px" onclick="viewPatientRecords(state.scannedPatient ? state.scannedPatient.patient_id : null, state.scannedPatient ? state.scannedPatient.patient_name : '')">View Medical Records</button>
     <button class="btn btn-outline" id="pfound-emerg-btn" style="margin-top:10px" onclick="go('v-emerg-consent')">Emergency Access</button>
   </div>
 </section>
@@ -457,12 +458,43 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
 <section class="view" id="v-pinfo" data-title="Patient Medical Information" data-nav="none">
   <div class="card">
-    <h2 class="title">Patient Medical Information</h2>
-    <p class="section-title" style="margin-top:0">Medical Conditions</p><p id="pv-cond">Asthma</p>
-    <p class="section-title">Allergies</p><p>Penicillin</p>
-    <p class="section-title">Current Medications</p><p>Paracetamol</p>
-    <p class="section-title">Previous Procedures</p><p id="pv-proc">Appendectomy - 2023</p>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="go('v-pdash')">Done</button>
+    <h2 class="title" id="pv-title">Patient Medical Information</h2>
+    <p class="sub" id="pv-patient-sub" style="margin-top:-6px;margin-bottom:14px;color:var(--blue);font-weight:600;"></p>
+    
+    <div id="pv-loading" style="display:none;padding:24px 0;text-align:center;">
+      <p class="sub">Loading patient medical records...</p>
+    </div>
+
+    <div id="pv-error" style="display:none;margin-bottom:14px;" class="warn-banner"></div>
+
+    <div id="pv-error-actions" style="display:none;margin-top:14px;">
+      <button class="btn btn-primary" id="pv-req-access-btn" onclick="go('v-preq')">Request Access</button>
+      <button class="btn btn-outline" style="margin-top:8px" onclick="go('v-pdash')">Back to Dashboard</button>
+    </div>
+
+    <div id="pv-content">
+      <div style="background:var(--light-bg,#f8fafc);border:1px solid var(--border,#e2e8f0);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div class="list-item" style="padding:4px 0"><span>Passport ID</span><b id="pv-passport-id">—</b></div>
+        <div class="list-item" style="padding:4px 0"><span>Blood Group</span><b id="pv-blood">—</b></div>
+        <div class="list-item" style="padding:4px 0"><span>Date of Birth</span><b id="pv-dob">—</b></div>
+        <div class="list-item" style="padding:4px 0"><span>Emergency Contact</span><b id="pv-contact">—</b></div>
+      </div>
+
+      <p class="section-title" style="margin-top:0">Medical Conditions</p>
+      <div id="pv-cond"><p class="sub" style="margin:0">None reported</p></div>
+
+      <p class="section-title">Allergies</p>
+      <div id="pv-allergies"><p class="sub" style="margin:0">None reported</p></div>
+
+      <p class="section-title">Current Medications</p>
+      <div id="pv-meds"><p class="sub" style="margin:0">None reported</p></div>
+
+      <p class="section-title">Previous Procedures</p>
+      <div id="pv-proc"><p class="sub" style="margin:0">None reported</p></div>
+
+      <button class="btn btn-primary" id="pv-done-btn" style="margin-top:18px" onclick="go('v-pdash')">Done</button>
+      <button class="btn btn-outline" id="pv-scan-btn" style="margin-top:8px" onclick="go('v-scan')">Scan Another Patient</button>
+    </div>
   </div>
 </section>
 
@@ -525,6 +557,9 @@ const state = {
   accessRequests: [],
   activeRequestId: null,
   lastSentRequest: null,
+  activePatientId: null,
+  activePatientName: '',
+  providerPatientRecords: null,
   history:[
     {org:'XYZ Hospital',doc:'Dr. Ahmed',items:'Conditions, Allergies, Medication',date:'2 days ago'},
     {org:'ABC Hospital',doc:'Dr. Sarah',items:'Conditions, Vitals, Medication',date:'1 week ago'}
@@ -673,6 +708,9 @@ function logout() {
   state.accessRequests = [];
   state.activeRequestId = null;
   state.lastSentRequest = null;
+  state.activePatientId = null;
+  state.activePatientName = '';
+  state.providerPatientRecords = null;
   localStorage.removeItem('medtrace_token');
   localStorage.removeItem('medtrace_user');
   localStorage.removeItem('medtrace_passport_id');
@@ -1185,12 +1223,19 @@ function renderProviderDashboardUI(data) {
     const requests = (data && Array.isArray(data.recent_requests)) ? data.recent_requests : [];
     if (requests.length) {
       listEl.innerHTML = requests.map(r => `
-        <div class="list-item">
+        <div class="list-item" style="cursor:pointer;" onclick="viewPatientRecords(${r.patient_id}, '${(r.patient_name || '').replace(/'/g, "\\'")}')">
           <div>
             <b>${r.patient_name || ('Patient #' + r.patient_id)}</b><br>
             <span class="sub" style="margin:0">${r.reason || 'Consultation'} &middot; ${r.status || 'Pending'}</span>
           </div>
-          <span class="badge ${r.status === 'approved' ? 'ok' : 'warn'}">${r.status || 'Pending'}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge ${r.status === 'approved' ? 'ok' : 'warn'}">${r.status || 'Pending'}</span>
+            <button class="btn ${r.status === 'approved' ? 'btn-primary' : 'btn-outline'}" 
+                    style="width:auto;padding:5px 12px;font-size:0.75rem;margin:0" 
+                    onclick="event.stopPropagation(); viewPatientRecords(${r.patient_id}, '${(r.patient_name || '').replace(/'/g, "\\'")}')">
+              ${r.status === 'approved' ? 'View Records' : 'Check Access'}
+            </button>
+          </div>
         </div>
       `).join('');
     } else {
@@ -1473,6 +1518,187 @@ async function respondRequest(requestId, approved) {
 function respondActiveRequest(approved) {
   const reqId = state.activeRequestId || ((state.accessRequests || []).find(r => r.status === 'pending') || {}).id;
   respondRequest(reqId, approved);
+}
+
+/* ---- Group 6: Provider Medical Records ---- */
+async function viewPatientRecords(patientId, patientName) {
+  const pid = patientId || (state.scannedPatient ? state.scannedPatient.patient_id : null) || state.activePatientId;
+  if (!pid) {
+    toast('No patient ID available to view records');
+    return;
+  }
+  state.activePatientId = pid;
+  state.activePatientName = patientName || (state.scannedPatient ? state.scannedPatient.patient_name : '');
+  go('v-pinfo');
+  await loadProviderPatientRecords(pid, state.activePatientName);
+}
+
+function setProviderRecordsLoading(isLoading) {
+  const loadingEl = document.getElementById('pv-loading');
+  const contentEl = document.getElementById('pv-content');
+  const errorEl = document.getElementById('pv-error');
+  const errorActionsEl = document.getElementById('pv-error-actions');
+  const doneBtn = document.getElementById('pv-done-btn');
+  const scanBtn = document.getElementById('pv-scan-btn');
+
+  if (loadingEl) loadingEl.style.display = isLoading ? 'block' : 'none';
+  if (contentEl) contentEl.style.display = isLoading ? 'none' : 'block';
+  if (errorEl && isLoading) errorEl.style.display = 'none';
+  if (errorActionsEl && isLoading) errorActionsEl.style.display = 'none';
+  if (doneBtn) doneBtn.disabled = isLoading;
+  if (scanBtn) scanBtn.disabled = isLoading;
+}
+
+function renderProviderPatientRecordsError(errorMessage) {
+  const contentEl = document.getElementById('pv-content');
+  if (contentEl) contentEl.style.display = 'none';
+
+  const errorEl = document.getElementById('pv-error');
+  if (errorEl) {
+    errorEl.textContent = `⚠️ Access Restricted: ${errorMessage}`;
+    errorEl.style.display = 'block';
+  }
+
+  const errorActionsEl = document.getElementById('pv-error-actions');
+  if (errorActionsEl) {
+    errorActionsEl.style.display = 'block';
+  }
+
+  const subEl = document.getElementById('pv-patient-sub');
+  if (subEl) {
+    const pName = state.activePatientName || (state.scannedPatient ? state.scannedPatient.patient_name : '') || ('Patient #' + state.activePatientId);
+    subEl.textContent = `Patient: ${pName} (Access Denied)`;
+  }
+
+  toast(errorMessage);
+}
+
+function renderProviderPatientRecordsUI(data, patientName) {
+  const errorEl = document.getElementById('pv-error');
+  if (errorEl) errorEl.style.display = 'none';
+
+  const errorActionsEl = document.getElementById('pv-error-actions');
+  if (errorActionsEl) errorActionsEl.style.display = 'none';
+
+  const contentEl = document.getElementById('pv-content');
+  if (contentEl) contentEl.style.display = 'block';
+
+  const subEl = document.getElementById('pv-patient-sub');
+  if (subEl) {
+    const pName = patientName || (state.scannedPatient ? state.scannedPatient.patient_name : '') || ('Patient #' + state.activePatientId);
+    subEl.textContent = `Patient: ${pName}`;
+  }
+
+  // Profile metadata
+  const prof = (data && data.profile) || {};
+  const passEl = document.getElementById('pv-passport-id');
+  if (passEl) passEl.textContent = prof.passport_id || '—';
+
+  const bloodEl = document.getElementById('pv-blood');
+  if (bloodEl) bloodEl.textContent = prof.blood_group || '—';
+
+  const dobEl = document.getElementById('pv-dob');
+  if (dobEl) dobEl.textContent = prof.date_of_birth || 'Not specified';
+
+  const contactEl = document.getElementById('pv-contact');
+  if (contactEl) {
+    const contact = [prof.emergency_contact_name, prof.emergency_contact_phone].filter(Boolean).join(' - ') || 'Not specified';
+    contactEl.textContent = contact;
+  }
+
+  // Conditions
+  const condEl = document.getElementById('pv-cond');
+  if (condEl) {
+    const conds = (data && Array.isArray(data.conditions)) ? data.conditions : [];
+    if (conds.length) {
+      condEl.innerHTML = conds.map(c => `
+        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-block">
+          ${c.name || 'Condition'}${c.is_major ? ' <b>(Major)</b>' : ''}
+          ${c.diagnosed_date ? ' <small>(' + c.diagnosed_date + ')</small>' : ''}
+        </span>
+      `).join('');
+    } else {
+      condEl.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
+    }
+  }
+
+  // Allergies
+  const allergyEl = document.getElementById('pv-allergies');
+  if (allergyEl) {
+    const allergies = (data && Array.isArray(data.allergies)) ? data.allergies : [];
+    if (allergies.length) {
+      allergyEl.innerHTML = allergies.map(a => `
+        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-block">
+          ${a.allergen || 'Allergy'}${a.severity ? ' (' + a.severity + ')' : ''}
+          ${a.reaction ? ' - ' + a.reaction : ''}
+        </span>
+      `).join('');
+    } else {
+      allergyEl.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
+    }
+  }
+
+  // Medications
+  const medsEl = document.getElementById('pv-meds');
+  if (medsEl) {
+    const meds = (data && Array.isArray(data.medications)) ? data.medications : [];
+    if (meds.length) {
+      medsEl.innerHTML = meds.map(m => `
+        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-block">
+          ${m.name || 'Medication'}${m.dosage ? ' ' + m.dosage : ''}${m.frequency ? ' (' + m.frequency + ')' : ''}
+        </span>
+      `).join('');
+    } else {
+      medsEl.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
+    }
+  }
+
+  // Procedures
+  const procEl = document.getElementById('pv-proc');
+  if (procEl) {
+    const procs = (data && Array.isArray(data.procedures)) ? data.procedures : [];
+    if (procs.length) {
+      procEl.innerHTML = procs.map(p => `
+        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-block">
+          ${p.name || 'Procedure'}${p.performed_on ? ' (' + p.performed_on + ')' : ''}
+          ${p.facility ? ' @ ' + p.facility : ''}
+        </span>
+      `).join('');
+    } else {
+      procEl.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
+    }
+  }
+}
+
+async function loadProviderPatientRecords(patientId, patientName) {
+  if (!state.auth || !state.auth.token || state.role !== 'provider') {
+    toast('Must be logged in as a healthcare provider');
+    return null;
+  }
+
+  const pid = patientId || state.activePatientId || (state.scannedPatient ? state.scannedPatient.patient_id : null);
+  if (!pid) {
+    toast('No patient selected to load records');
+    go('v-pdash');
+    return null;
+  }
+
+  setProviderRecordsLoading(true);
+
+  try {
+    const data = await apiRequest(`/api/patients/${encodeURIComponent(pid)}/records`);
+    if (data) {
+      state.providerPatientRecords = data;
+      renderProviderPatientRecordsUI(data, patientName || state.activePatientName);
+      setProviderRecordsLoading(false);
+      return data;
+    }
+  } catch (err) {
+    console.error('Failed to load patient records:', err);
+    setProviderRecordsLoading(false);
+    renderProviderPatientRecordsError(err.message || 'Patient access has not been approved');
+    return null;
+  }
 }
 
 async function loadPatientProfile(){
@@ -1850,6 +2076,16 @@ function renderDynamic(id){
     const sub = document.getElementById('preq-patient-sub');
     if (sub && state.scannedPatient) {
       sub.textContent = `Requesting consultation access for: ${state.scannedPatient.patient_name || 'Patient'}`;
+    }
+  }
+  if(id==='v-pinfo'){
+    const pid = state.activePatientId || (state.scannedPatient ? state.scannedPatient.patient_id : null);
+    if (pid) {
+      if (state.providerPatientRecords) {
+        renderProviderPatientRecordsUI(state.providerPatientRecords, state.activePatientName);
+      } else {
+        loadProviderPatientRecords(pid, state.activePatientName);
+      }
     }
   }
 }
