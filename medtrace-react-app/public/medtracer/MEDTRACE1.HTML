@@ -134,6 +134,10 @@ input:focus,select:focus{outline:2px solid var(--blue);}
       <span style="color:var(--gray);font-size:.78rem">Current Portal:</span><br>
       <b id="roleLabel">Patient Portal</b><br>
       <button id="switchRoleBtn" onclick="switchRole()" style="margin-top:6px;width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600">Switch to Provider Portal</button>
+      <div id="backend-status-container" style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:0.75rem;cursor:pointer" title="Click to re-check connectivity" onclick="backendHealthChecked=false;checkBackendHealth();">
+        <span id="backend-status-dot" style="width:7px;height:7px;border-radius:50%;background:#94a3b8;display:inline-block"></span>
+        <span id="backend-status-text" style="color:var(--gray);font-weight:600">Connecting...</span>
+      </div>
     </div>
   </aside>
 
@@ -141,6 +145,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <div id="topbar">
       <button id="backBtn" onclick="goBack()">&#8592;</button>
       <h2 id="topTitle">MedTrace</h2>
+      <div id="topbar-status-dot" style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;cursor:pointer" title="Click to re-check connectivity" onclick="backendHealthChecked=false;checkBackendHealth();"></div>
     </div>
     <div id="content"><div class="wrap" id="viewport"></div></div>
     <nav id="bottomnav"></nav>
@@ -715,7 +720,9 @@ const state = {
     {name:'John Taylor',scan:'Today, 9:12am'},
     {name:'Maria Lopez',scan:'Yesterday'},
     {name:'Sam Peters',scan:'3 days ago'}
-  ]
+  ],
+  backendHealthy: null,
+  backendService: null
 };
 let navStack=[];
 
@@ -2910,9 +2917,86 @@ function renderDynamic(id){
   }
 }
 
+/* ---- Group 12: Backend Health Check ---- */
+let backendHealthChecked = false;
+
+async function checkBackendHealth() {
+  if (backendHealthChecked) return;
+  backendHealthChecked = true;
+
+  updateBackendStatusUI('checking');
+  try {
+    const data = await apiRequest('/health');
+    if (data && data.status === 'ok') {
+      state.backendHealthy = true;
+      state.backendService = data.service || 'medtrace-api';
+      updateBackendStatusUI('healthy');
+    } else {
+      state.backendHealthy = false;
+      updateBackendStatusUI('unhealthy');
+    }
+  } catch (err) {
+    console.warn('Backend connectivity note:', err.message || err);
+    state.backendHealthy = false;
+    updateBackendStatusUI('unhealthy');
+  }
+}
+
+function updateBackendStatusUI(status) {
+  const dot = document.getElementById('backend-status-dot');
+  const txt = document.getElementById('backend-status-text');
+  const topDot = document.getElementById('topbar-status-dot');
+
+  if (status === 'healthy') {
+    if (dot) {
+      dot.style.background = '#10b981';
+      dot.title = `Connected to ${state.backendService || 'backend'}`;
+    }
+    if (txt) {
+      txt.textContent = 'Connected';
+      txt.style.color = '#10b981';
+      txt.title = `Connected to ${state.backendService || 'backend'}`;
+    }
+    if (topDot) {
+      topDot.style.background = '#10b981';
+      topDot.title = `Connected to ${state.backendService || 'backend'}`;
+    }
+  } else if (status === 'checking') {
+    if (dot) {
+      dot.style.background = '#94a3b8';
+      dot.title = 'Connecting to backend...';
+    }
+    if (txt) {
+      txt.textContent = 'Connecting...';
+      txt.style.color = 'var(--gray)';
+    }
+    if (topDot) {
+      topDot.style.background = '#94a3b8';
+      topDot.title = 'Connecting to backend...';
+    }
+  } else {
+    if (dot) {
+      dot.style.background = '#f59e0b';
+      dot.title = 'Backend offline or unreachable';
+    }
+    if (txt) {
+      txt.textContent = 'Offline';
+      txt.style.color = '#f59e0b';
+      txt.title = 'Backend offline or unreachable';
+    }
+    if (topDot) {
+      topDot.style.background = '#f59e0b';
+      topDot.title = 'Backend offline or unreachable';
+    }
+  }
+}
+
 /* ---- boot ---- */
 document.getElementById('viewport').appendChild(document.getElementById('tpl-views').content.cloneNode(true));
 buildNav();
+
+// Group 12: Lightweight, non-blocking backend connectivity check
+checkBackendHealth();
 
 /* Check for direct emergency lookup via URL parameter or hash */
 const urlParams = new URLSearchParams(window.location.search);
