@@ -350,7 +350,8 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 </section>
 
 <section class="view" id="v-pdash" data-title="Provider Dashboard" data-nav="pdashboard">
-  <h2 class="title">Provider Dashboard</h2>
+  <h2 class="title" id="provider-greet">Provider Dashboard</h2>
+  <p class="sub" id="provider-org" style="margin-top:-6px;margin-bottom:12px;color:var(--blue);font-weight:600;"></p>
   <div class="card" style="margin-top:14px"><div id="patient-list"></div></div>
   <button class="btn btn-outline" style="margin-top:14px" onclick="go('v-scan')">+ Scan a new patient</button>
 </section>
@@ -358,18 +359,25 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-scan" data-title="Scan Patient QR" data-nav="scan">
   <div class="card center">
     <h2 class="title">Scan Patient QR</h2>
-    <div class="qr-box" style="border-style:dashed"><span>Scanner</span></div>
-    <button class="btn btn-primary" onclick="go('v-pfound')">Simulate Scan</button>
+    <div class="qr-box" style="border-style:dashed;margin-bottom:12px;"><span>Scanner</span></div>
+    <label style="text-align:left;display:block;margin:12px 0 6px;font-weight:700;">Patient QR Token</label>
+    <div class="row" style="margin-bottom:14px;">
+      <input type="text" id="scan-qr-token-input" placeholder="e.g. paste qr_token here" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupPatient();}">
+      <button class="btn btn-primary" id="scan-lookup-btn" style="width:auto;padding:0 20px" onclick="lookupPatient()">Lookup</button>
+    </div>
+    <button class="btn btn-outline" style="width:100%;" onclick="lookupPatient()">Simulate Scan (Use Patient QR)</button>
   </div>
 </section>
 
 <section class="view" id="v-pfound" data-title="Patient Found" data-nav="none">
   <div class="card">
     <h2 class="title">Patient Found</h2>
-    <div class="list-item"><span>Patient ID</span><b>JT-000123</b></div>
-    <div class="list-item"><span>Date of Birth</span><b>** / ** / ****</b></div>
+    <div class="list-item"><span>Patient Name</span><b id="pfound-name">—</b></div>
+    <div class="list-item"><span>Patient ID</span><b id="pfound-id">—</b></div>
+    <div class="list-item"><span>Blood Group</span><b id="pfound-blood">—</b></div>
+    <div class="list-item"><span>Emergency Mode</span><b id="pfound-emergency">—</b></div>
     <button class="btn btn-primary" style="margin-top:16px" onclick="go('v-preq')">Request Access</button>
-    <button class="btn btn-outline" style="margin-top:10px" onclick="go('v-emerg-consent')">Emergency Access</button>
+    <button class="btn btn-outline" id="pfound-emerg-btn" style="margin-top:10px" onclick="go('v-emerg-consent')">Emergency Access</button>
   </div>
 </section>
 
@@ -462,6 +470,8 @@ const state = {
   savedProcedures: new Set(),
   dashboard: null,
   records: null,
+  providerDashboard: null,
+  scannedPatient: null,
   history:[
     {org:'XYZ Hospital',doc:'Dr. Ahmed',items:'Conditions, Allergies, Medication',date:'2 days ago'},
     {org:'ABC Hospital',doc:'Dr. Sarah',items:'Conditions, Vitals, Medication',date:'1 week ago'}
@@ -528,6 +538,8 @@ async function apiRequest(endpoint, options = {}) {
       errorMsg = text;
     } else if (response.status === 401) {
       errorMsg = 'Incorrect email or password.';
+    } else if (response.status === 404) {
+      errorMsg = 'Patient QR code was not found.';
     } else if (response.status === 409) {
       errorMsg = 'This email is already registered.';
     } else if (response.status === 422) {
@@ -564,6 +576,8 @@ function logout() {
   state.profile.passport_id = '';
   state.dashboard = null;
   state.records = null;
+  state.providerDashboard = null;
+  state.scannedPatient = null;
   localStorage.removeItem('medtrace_token');
   localStorage.removeItem('medtrace_user');
   localStorage.removeItem('medtrace_passport_id');
@@ -672,6 +686,7 @@ async function handleLogin(event, expectedRole) {
     if (data.user.role === 'provider') {
       state.role = 'provider';
       buildNav();
+      loadProviderDashboard();
       go('v-pdash', true);
     } else {
       state.role = 'patient';
@@ -802,7 +817,10 @@ async function loadPatientDashboard() {
           state.profile.passport_id = data.profile.passport_id;
           localStorage.setItem('medtrace_passport_id', data.profile.passport_id);
         }
-        if (data.profile.qr_token) state.profile.qr_token = data.profile.qr_token;
+        if (data.profile.qr_token) {
+          state.profile.qr_token = data.profile.qr_token;
+          localStorage.setItem('medtrace_last_qr_token', data.profile.qr_token);
+        }
         if (data.profile.date_of_birth) state.profile.dob = data.profile.date_of_birth;
         if (data.profile.blood_group) state.profile.blood = data.profile.blood_group;
         if (data.profile.emergency_contact_name || data.profile.emergency_contact_phone) {
@@ -959,6 +977,104 @@ function renderRecordsUI(data) {
     const contact = [prof.emergency_contact_name, prof.emergency_contact_phone].filter(Boolean).join(' - ') || state.profile.contact || 'Not set';
     emContact.textContent = contact;
   }
+}
+
+/* ---- Group 4: Provider Dashboard & Patient Lookup ---- */
+async function loadProviderDashboard() {
+  if (!state.auth || !state.auth.token || state.role !== 'provider') return null;
+  try {
+    const data = await apiRequest('/api/provider/dashboard');
+    if (data) {
+      state.providerDashboard = data;
+      renderProviderDashboardUI(data);
+    }
+    return data;
+  } catch (err) {
+    console.error('Failed to load provider dashboard:', err);
+    return null;
+  }
+}
+
+function renderProviderDashboardUI(data) {
+  const greetEl = document.getElementById('provider-greet');
+  if (greetEl) {
+    greetEl.textContent = (data && data.provider_name) ? data.provider_name : (state.auth.user ? state.auth.user.full_name : 'Provider Dashboard');
+  }
+  const orgEl = document.getElementById('provider-org');
+  if (orgEl) {
+    orgEl.textContent = (data && data.organization) ? data.organization : '';
+  }
+  const listEl = document.getElementById('patient-list');
+  if (listEl) {
+    const requests = (data && Array.isArray(data.recent_requests)) ? data.recent_requests : [];
+    if (requests.length) {
+      listEl.innerHTML = requests.map(r => `
+        <div class="list-item">
+          <div>
+            <b>${r.patient_name || ('Patient #' + r.patient_id)}</b><br>
+            <span class="sub" style="margin:0">${r.reason || 'Consultation'} &middot; ${r.status || 'Pending'}</span>
+          </div>
+          <span class="badge ${r.status === 'approved' ? 'ok' : 'warn'}">${r.status || 'Pending'}</span>
+        </div>
+      `).join('');
+    } else {
+      listEl.innerHTML = '<p class="sub" style="margin:10px 0">No patients scanned or access requested yet.</p>';
+    }
+  }
+}
+
+async function lookupPatient(customToken) {
+  const inp = document.getElementById('scan-qr-token-input');
+  let token = customToken || (inp ? inp.value.trim() : '');
+  
+  if (!token) {
+    token = state.profile.qr_token || localStorage.getItem('medtrace_last_qr_token') || '';
+  }
+
+  if (!token) {
+    toast('Please enter or scan a valid QR token');
+    return;
+  }
+
+  const btn = document.getElementById('scan-lookup-btn');
+  const originalText = btn ? btn.textContent : 'Lookup';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Scanning...';
+  }
+
+  try {
+    const data = await apiRequest(`/api/patients/lookup/${encodeURIComponent(token)}`);
+    if (data) {
+      state.scannedPatient = { ...data, qr_token: token };
+      localStorage.setItem('medtrace_last_qr_token', token);
+      renderScannedPatientUI(state.scannedPatient);
+      toast(`✓ Patient found: ${data.patient_name}`);
+      go('v-pfound');
+    }
+  } catch (err) {
+    toast(err.message || 'Patient QR code was not found');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
+function renderScannedPatientUI(patient) {
+  if (!patient) return;
+  const nameEl = document.getElementById('pfound-name');
+  if (nameEl) nameEl.textContent = patient.patient_name || '—';
+
+  const idEl = document.getElementById('pfound-id');
+  if (idEl) idEl.textContent = 'PT-' + String(patient.patient_id).padStart(6, '0');
+
+  const bloodEl = document.getElementById('pfound-blood');
+  if (bloodEl) bloodEl.textContent = patient.blood_group || '—';
+
+  const emergEl = document.getElementById('pfound-emergency');
+  if (emergEl) emergEl.textContent = patient.emergency_mode_available ? 'Available' : 'Unavailable';
 }
 
 async function loadPatientProfile(){
@@ -1307,8 +1423,20 @@ function renderDynamic(id){
       <div class="list-item"><div><b>${h.org}</b><br><span class="sub" style="margin:0">${h.doc} &middot; ${h.items}</span></div><span class="badge ok">${h.date}</span></div>`).join('') || '<p class="sub">No access recorded yet.</p>';
   }
   if(id==='v-pdash'){
-    document.getElementById('patient-list').innerHTML = state.patients.map(p=>`
-      <div class="list-item"><div style="display:flex;gap:10px;align-items:center"><div class="avatar">${p.name[0]}</div><div><b>${p.name}</b><br><span class="sub" style="margin:0">Last scan: ${p.scan}</span></div></div><a class="link" onclick="go('v-pfound')">View</a></div>`).join('');
+    renderProviderDashboardUI(state.providerDashboard);
+    if (!state.providerDashboard) {
+      loadProviderDashboard();
+    }
+  }
+  if(id==='v-scan'){
+    const inp = document.getElementById('scan-qr-token-input');
+    const lastToken = localStorage.getItem('medtrace_last_qr_token') || state.profile.qr_token;
+    if(inp && !inp.value && lastToken){
+      inp.value = lastToken;
+    }
+  }
+  if(id==='v-pfound'){
+    renderScannedPatientUI(state.scannedPatient);
   }
 }
 
@@ -1329,6 +1457,8 @@ if (state.auth && state.auth.token) {
     loadPatientDashboard();
     loadPatientRecords();
     loadPatientQrImage();
+  } else if (state.role === 'provider') {
+    loadProviderDashboard();
   }
   go(state.role === 'provider' ? 'v-pdash' : 'v-dash', true);
 } else {
