@@ -1,0 +1,4 @@
+/api/*  https://medtrace-l2k9.onrender.com/api/:splat  200!
+/health https://medtrace-l2k9.onrender.com/health      200!
+/       /medtracer/MEDTRACE1.HTML                      200
+/*      /medtracer/MEDTRACE1.HTML                      200

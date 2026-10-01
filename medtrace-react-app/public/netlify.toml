@@ -1,4 +1,21 @@
 [[redirects]]
-from="/*"
-to="/index.html"
-status=200
+  from = "/api/*"
+  to = "https://medtrace-l2k9.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/health"
+  to = "https://medtrace-l2k9.onrender.com/health"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/"
+  to = "/medtracer/MEDTRACE1.HTML"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/medtracer/MEDTRACE1.HTML"
+  status = 200

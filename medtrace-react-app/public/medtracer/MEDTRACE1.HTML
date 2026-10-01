@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MedTrace</title>
+<script src="html5-qrcode.min.js"></script>
+<script>
+  if (typeof Html5Qrcode === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+    document.head.appendChild(s);
+  }
+</script>
 <style>
 :root{
   --navy:#0c2340; --navy2:#0d2847; --blue:#1976d2; --blue-l:#e3f2fd;
@@ -52,8 +60,9 @@ h2.title{font-size:1.4rem;font-weight:800;margin-bottom:6px;}
 p.sub{color:var(--gray);font-size:.88rem;margin-bottom:18px;line-height:1.4;}
 .step{color:var(--blue);font-weight:700;font-size:.75rem;margin-bottom:6px;}
 label{display:block;font-size:.78rem;font-weight:700;color:var(--navy);margin:14px 0 5px;}
-input[type=text],input[type=password],input[type=date],select,textarea{
+input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{
   width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-size:.9rem;background:#fbfcfe;}
+input::placeholder,textarea::placeholder{color:#94a3b8;opacity:1;font-family:inherit;}
 input:focus,select:focus{outline:2px solid var(--blue);}
 .btn{display:block;width:100%;padding:13px;border-radius:14px;font-weight:700;font-size:.88rem;text-align:center;}
 .btn-primary{background:var(--blue);color:#fff;}
@@ -107,7 +116,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   p.sub{font-size:clamp(1.02rem,.98rem + .14vw,1.14rem);line-height:1.65;}
   p[style*="font-size:.88rem"]{font-size:1rem!important;line-height:1.65!important;}
   label{font-size:.95rem;}
-  input[type=text],input[type=password],input[type=date],select,textarea{min-height:50px;padding:14px 16px;font-size:1rem;line-height:1.5;}
+  input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{min-height:50px;padding:14px 16px;font-size:1rem;line-height:1.5;}
   .btn{min-height:50px;padding:14px 16px;font-size:1rem;line-height:1.45;}
   .section-title{font-size:.92rem;letter-spacing:.04em;}
   .step{font-size:.84rem;}
@@ -121,6 +130,107 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   .qr-box span{font-size:.85rem;}
   #sidebar .navlist a{font-size:1rem;}
   #sidebar .role-switch,#sidebar .role-switch button{font-size:.8rem;}
+}
+
+/* ---- Group 13: Live QR Scanner ---- */
+#qr-reader-container {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  min-height: 280px;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #090d16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+#qr-reader {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+}
+#qr-reader video {
+  width: 100% !important;
+  height: 280px !important;
+  object-fit: cover !important;
+  display: block;
+}
+#qr-reader__scan_region {
+  background: transparent !important;
+}
+#qr-reader__dashboard, #qr-reader__header_message {
+  display: none !important;
+}
+.scanner-reticle-box {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.scanner-reticle {
+  width: 210px;
+  height: 210px;
+  position: relative;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.42);
+  border-radius: 14px;
+}
+.scanner-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: #38bdf8;
+  border-style: solid;
+}
+.scanner-corner.tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 8px; }
+.scanner-corner.tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 8px; }
+.scanner-corner.bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 8px; }
+.scanner-corner.br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 8px; }
+
+@keyframes laserScanAnimation {
+  0% { top: 8px; opacity: 0.3; }
+  50% { top: 196px; opacity: 1; }
+  100% { top: 8px; opacity: 0.3; }
+}
+.scanner-laser {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: #38bdf8;
+  box-shadow: 0 0 10px #38bdf8, 0 0 16px #0284c7;
+  border-radius: 2px;
+  animation: laserScanAnimation 2.2s infinite ease-in-out;
+}
+
+/* Emergency Scanner Reticle & Laser (Red Theme) */
+#emerg-qr-reader {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+}
+#emerg-qr-reader video {
+  width: 100% !important;
+  height: 280px !important;
+  object-fit: cover !important;
+  display: block;
+}
+#emerg-qr-reader__scan_region {
+  background: transparent !important;
+}
+#emerg-qr-reader__dashboard, #emerg-qr-reader__header_message {
+  display: none !important;
+}
+.scanner-corner.emerg {
+  border-color: #f43f5e;
+}
+.scanner-laser.emerg {
+  background: #f43f5e;
+  box-shadow: 0 0 10px #f43f5e, 0 0 16px #be123c;
 }
 </style>
 </head>
@@ -163,7 +273,6 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <p class="sub">Securely store and share your essential medical information when you need it.</p>
     <button class="btn btn-primary" onclick="state.role='patient';buildNav();go('v-signup')">Create Patient Account</button>
     <button class="btn btn-outline" style="margin-top:10px" onclick="state.role='patient';buildNav();go('v-login')">Patient Login</button>
-    <button class="btn btn-danger" id="welcome-emerg-btn" style="margin-top:12px;background:#e11d48;color:#fff;width:100%;font-weight:700;" onclick="go('v-emerg-scan')">🚨 Emergency QR Lookup</button>
     <div class="foot-link" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
       Are you a healthcare provider?<br>
       <a class="link" onclick="state.role='provider';buildNav();go('v-plogin')">Provider Login</a> &middot; 
@@ -178,7 +287,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <p class="sub">Sign up to create and manage your personal medical passport</p>
     <form id="signup-form" onsubmit="handleSignup(event, 'patient')">
       <label>Full Name</label><input type="text" id="su-name" placeholder="Full Name" required>
-      <label>Email Address</label><input type="email" id="su-email" placeholder="name@example.com" required>
+      <label>Email Address</label><input type="email" id="su-email" placeholder="Email Address" required>
       <label>Password</label><input type="password" id="su-password" placeholder="At least 8 characters" minlength="8" required>
       <label>Confirm Password</label><input type="password" id="su-confirm" placeholder="Confirm Password" minlength="8" required>
       <button type="submit" class="btn btn-primary" id="su-btn" style="margin-top:18px">Create Account</button>
@@ -207,7 +316,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <h2 class="title">MedTrace</h2>
     <p class="sub">Please log in to your patient account to continue</p>
     <form id="login-form" onsubmit="handleLogin(event, 'patient')">
-      <label>Email Address</label><input type="email" id="login-email" placeholder="example12@gmail.com" required>
+      <label>Email Address</label><input type="email" id="login-email" placeholder="Email Address" required>
       <label>Password</label><input type="password" id="login-password" placeholder="Input Password" required>
       <p class="foot-link" style="text-align:right;margin:8px 0 0"><a class="link">Forgot Password?</a></p>
       <button type="submit" class="btn btn-primary" id="login-btn" style="margin-top:18px">Login</button>
@@ -447,7 +556,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <h2 class="title">Provider Login</h2>
     <p class="sub">Log in to your healthcare provider portal</p>
     <form id="plogin-form" onsubmit="handleLogin(event, 'provider')">
-      <label>Work Email</label><input type="email" id="plogin-email" placeholder="doctor@hospital.com" required>
+      <label>Work Email</label><input type="email" id="plogin-email" placeholder="Work Email" required>
       <label>Password</label><input type="password" id="plogin-password" placeholder="Input Password" required>
       <p class="foot-link" style="text-align:right;margin:8px 0 0"><a class="link">Forgot Password?</a></p>
       <button type="submit" class="btn btn-primary" id="plogin-btn" style="margin-top:18px">Login</button>
@@ -464,7 +573,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <form id="psignup-form" onsubmit="handleSignup(event, 'provider')">
       <label>Full Name</label><input type="text" id="psu-name" placeholder="e.g. Dr. Jane Smith" required>
       <label>Organization / Hospital</label><input type="text" id="psu-org" placeholder="e.g. City General Hospital" required>
-      <label>Work Email</label><input type="email" id="psu-email" placeholder="doctor@hospital.com" required>
+      <label>Work Email</label><input type="email" id="psu-email" placeholder="Work Email" required>
       <label>Password</label><input type="password" id="psu-password" placeholder="At least 8 characters" minlength="8" required>
       <label>Confirm Password</label><input type="password" id="psu-confirm" placeholder="Confirm Password" minlength="8" required>
       <button type="submit" class="btn btn-primary" id="psu-btn" style="margin-top:18px">Create Provider Account</button>
@@ -476,21 +585,86 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
 <section class="view" id="v-pdash" data-title="Provider Dashboard" data-nav="pdashboard">
   <h2 class="title" id="provider-greet">Provider Dashboard</h2>
-  <p class="sub" id="provider-org" style="margin-top:-6px;margin-bottom:12px;color:var(--blue);font-weight:600;"></p>
-  <div class="card" style="margin-top:14px"><div id="patient-list"></div></div>
-  <button class="btn btn-outline" style="margin-top:14px" onclick="go('v-scan')">+ Scan a new patient</button>
+  <p class="sub" id="provider-org" style="margin-top:-6px;margin-bottom:14px;color:var(--blue);font-weight:600;"></p>
+  
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+    <button class="btn btn-primary" id="pdash-scan-btn" style="margin:0;" onclick="go('v-scan')">📷 Scan Patient QR</button>
+    <button class="btn btn-danger" id="pdash-emerg-btn" style="margin:0;background:#e11d48;color:#fff;font-weight:700;" onclick="go('v-emerg-scan')">🚨 Emergency QR Scan (Critical Care)</button>
+  </div>
+
+  <p class="section-title">Recent Patients &amp; Consultation Requests</p>
+  <div class="card" style="margin-top:8px"><div id="patient-list"></div></div>
 </section>
 
 <section class="view" id="v-scan" data-title="Scan Patient QR" data-nav="scan">
-  <div class="card center">
-    <h2 class="title">Scan Patient QR</h2>
-    <div class="qr-box" style="border-style:dashed;margin-bottom:12px;"><span>Scanner</span></div>
-    <label style="text-align:left;display:block;margin:12px 0 6px;font-weight:700;">Patient QR Token</label>
-    <div class="row" style="margin-bottom:14px;">
-      <input type="text" id="scan-qr-token-input" placeholder="e.g. paste qr_token here" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupPatient();}">
-      <button class="btn btn-primary" id="scan-lookup-btn" style="width:auto;padding:0 20px" onclick="lookupPatient()">Lookup</button>
+  <div class="card center" style="padding:22px 18px;">
+    <h2 class="title" style="margin-bottom:4px;">Scan Patient QR</h2>
+    <p class="sub" style="margin-bottom:12px;">Point camera at patient's MedTrace QR passport</p>
+    
+    <!-- Status badge -->
+    <div id="scanner-status" style="margin-bottom:12px;font-size:0.82rem;font-weight:700;color:var(--blue);display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span class="scanner-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;"></span>
+      <span id="scanner-status-text">Initializing camera...</span>
     </div>
-    <button class="btn btn-outline" style="width:100%;" onclick="lookupPatient()">Simulate Scan (Use Patient QR)</button>
+
+    <!-- Live Camera Container with Viewfinder Overlay -->
+    <div id="qr-reader-container">
+      <div id="qr-reader"></div>
+
+      <!-- Viewfinder Overlay -->
+      <div class="scanner-reticle-box" id="qr-overlay">
+        <div class="scanner-reticle">
+          <span class="scanner-corner tl"></span>
+          <span class="scanner-corner tr"></span>
+          <span class="scanner-corner bl"></span>
+          <span class="scanner-corner br"></span>
+          <div class="scanner-laser"></div>
+        </div>
+      </div>
+
+      <!-- Error / Permission Denied Fallback UI -->
+      <div id="scanner-error-box" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(9,13,22,0.96);padding:24px 20px;text-align:center;color:#fff;z-index:10;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:2.2rem;margin-bottom:8px;">📷⚠️</div>
+        <p id="scanner-error-msg" style="font-size:0.84rem;color:#fca5a5;line-height:1.45;margin-bottom:14px;max-width:260px;">Camera access was not granted.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <button class="btn btn-primary" id="btn-retry-camera" style="width:auto;padding:8px 16px;font-size:0.8rem;" onclick="startQrScanner()">Retry Camera</button>
+          <label class="btn btn-outline" style="width:auto;padding:8px 16px;font-size:0.8rem;background:transparent;color:#38bdf8;border-color:#38bdf8!important;cursor:pointer;">
+            📁 Upload QR
+            <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="handleQrFileUpload(event)">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scanner Action Controls -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button class="btn btn-outline" id="btn-toggle-camera" style="flex:1;padding:10px;font-size:0.82rem;" onclick="toggleQrCamera()">🔄 Switch Camera</button>
+      <button class="btn btn-outline" id="btn-stop-camera" style="flex:1;padding:10px;font-size:0.82rem;" onclick="toggleQrScanningState()">⏸ Pause Camera</button>
+    </div>
+
+    <!-- Secondary Fallback: Manual Token Entry & Demo Helpers -->
+    <div style="margin-top:8px;text-align:left;">
+      <button type="button" id="manual-toggle-btn" class="link" style="background:none;border:none;color:var(--gray);font-size:0.8rem;font-weight:600;padding:6px 0;display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="toggleManualInput()">
+        <span id="manual-toggle-icon">▶</span> Manual Token / Fallback Options
+      </button>
+      
+      <div id="manual-input-section" style="display:none;margin-top:10px;padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;">
+        <label style="margin:0 0 6px;font-size:0.75rem;font-weight:700;">Enter Patient QR Token</label>
+        <div class="row" style="margin-bottom:10px;">
+          <input type="text" id="scan-qr-token-input" placeholder="e.g. paste qr_token here" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupPatient();}">
+          <button class="btn btn-primary" id="scan-lookup-btn" style="width:auto;padding:0 16px;font-size:0.82rem;" onclick="lookupPatient()">Lookup</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;" onclick="simulateProviderScan()">⚡ Use Patient QR</button>
+          <label class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;">
+            📁 Upload QR Image
+            <input type="file" id="qr-file-input-manual" accept="image/*" style="display:none" onchange="handleQrFileUpload(event)">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" style="margin-top:16px;" onclick="go('v-pdash')">← Back to Dashboard</button>
   </div>
 </section>
 
@@ -577,19 +751,77 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 </section>
 
 <section class="view" id="v-emerg-scan" data-title="Emergency QR Scanner" data-nav="none">
-  <div class="card center">
-    <div style="font-size:2.8rem">🚨</div>
-    <h2 class="title" style="color:#e11d48">Emergency Medical Lookup</h2>
-    <p class="sub">Scan or enter a patient's MedTrace QR token to view critical emergency data immediately without requiring login.</p>
-    
-    <label style="text-align:left;display:block;margin:16px 0 6px;font-weight:700;">Patient QR Token</label>
-    <div class="row" style="margin-bottom:12px;">
-      <input type="text" id="emerg-token-input" placeholder="e.g. paste or scan qr_token" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupEmergency();}">
-      <button class="btn btn-danger" id="emerg-lookup-btn" style="width:auto;padding:0 20px;background:#e11d48;color:#fff;" onclick="lookupEmergency()">Lookup</button>
+  <div class="card center" style="padding:22px 18px;">
+    <div style="display:inline-block;background:#fee2e2;color:#991b1b;font-weight:800;font-size:0.78rem;padding:4px 10px;border-radius:20px;margin-bottom:8px;">
+      🚨 EMERGENCY ACCESS MODE
     </div>
+    <h2 class="title" style="color:#e11d48;margin-bottom:4px;">Scan Patient QR</h2>
+    <p class="sub" style="margin-bottom:12px;">Point camera at patient's MedTrace QR passport for instant critical care info</p>
     
-    <button class="btn btn-outline" style="width:100%;margin-bottom:10px;" onclick="simulateEmergencyScan()">Simulate Scan (Use Last Patient QR)</button>
-    <button class="btn btn-outline" style="width:100%;" onclick="exitEmergencyFlow()">Back</button>
+    <!-- Status badge -->
+    <div id="emerg-scanner-status" style="margin-bottom:12px;font-size:0.82rem;font-weight:700;color:#e11d48;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span class="scanner-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;"></span>
+      <span id="emerg-scanner-status-text">Initializing emergency camera...</span>
+    </div>
+
+    <!-- Live Camera Container with Viewfinder Overlay -->
+    <div id="emerg-qr-reader-container" style="position:relative;width:100%;max-width:340px;min-height:280px;margin:0 auto 14px;border-radius:16px;overflow:hidden;background:#090d16;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(225,29,72,0.18);border:2px solid rgba(225,29,72,0.3);">
+      <div id="emerg-qr-reader"></div>
+
+      <!-- Viewfinder Overlay with Emergency Red Theme -->
+      <div class="scanner-reticle-box" id="emerg-qr-overlay">
+        <div class="scanner-reticle" style="box-shadow:0 0 0 9999px rgba(0,0,0,0.5);">
+          <span class="scanner-corner tl emerg"></span>
+          <span class="scanner-corner tr emerg"></span>
+          <span class="scanner-corner bl emerg"></span>
+          <span class="scanner-corner br emerg"></span>
+          <div class="scanner-laser emerg"></div>
+        </div>
+      </div>
+
+      <!-- Error / Permission Denied Fallback UI -->
+      <div id="emerg-scanner-error-box" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(9,13,22,0.96);padding:24px 20px;text-align:center;color:#fff;z-index:10;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:2.2rem;margin-bottom:8px;">📷⚠️</div>
+        <p id="emerg-scanner-error-msg" style="font-size:0.84rem;color:#fca5a5;line-height:1.45;margin-bottom:14px;max-width:260px;">Camera access was not granted.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <button class="btn btn-danger" id="emerg-btn-retry-camera" style="width:auto;padding:8px 16px;font-size:0.8rem;background:#e11d48;color:#fff;" onclick="startEmergencyQrScanner()">Retry Camera</button>
+          <label class="btn btn-outline" style="width:auto;padding:8px 16px;font-size:0.8rem;background:transparent;color:#f43f5e;border-color:#f43f5e!important;cursor:pointer;">
+            📁 Upload QR
+            <input type="file" id="emerg-qr-file-input" accept="image/*" style="display:none" onchange="handleEmergencyQrFileUpload(event)">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scanner Action Controls -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button class="btn btn-outline" id="emerg-btn-toggle-camera" style="flex:1;padding:10px;font-size:0.82rem;" onclick="toggleEmergencyQrCamera()">🔄 Switch Camera</button>
+      <button class="btn btn-outline" id="emerg-btn-stop-camera" style="flex:1;padding:10px;font-size:0.82rem;" onclick="toggleEmergencyQrScanningState()">⏸ Pause Camera</button>
+    </div>
+
+    <!-- Secondary Fallback: Manual Token Entry & Demo Helpers -->
+    <div style="margin-top:8px;text-align:left;">
+      <button type="button" id="emerg-manual-toggle-btn" class="link" style="background:none;border:none;color:var(--gray);font-size:0.8rem;font-weight:600;padding:6px 0;display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="toggleEmergencyManualInput()">
+        <span id="emerg-manual-toggle-icon">▶</span> Manual Token / Fallback Options
+      </button>
+      
+      <div id="emerg-manual-input-section" style="display:none;margin-top:10px;padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;">
+        <label style="margin:0 0 6px;font-size:0.75rem;font-weight:700;">Enter Patient QR Token</label>
+        <div class="row" style="margin-bottom:10px;">
+          <input type="text" id="emerg-token-input" placeholder="e.g. paste or scan qr_token" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupEmergency();}">
+          <button class="btn btn-danger" id="emerg-lookup-btn" style="width:auto;padding:0 16px;font-size:0.82rem;background:#e11d48;color:#fff;" onclick="lookupEmergency()">Lookup</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;" onclick="simulateEmergencyScan()">⚡ Use Patient QR</button>
+          <label class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;">
+            📁 Upload QR Image
+            <input type="file" id="emerg-qr-file-input-manual" accept="image/*" style="display:none" onchange="handleEmergencyQrFileUpload(event)">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" style="margin-top:16px;" onclick="exitEmergencyFlow()">← Exit Emergency Mode</button>
   </div>
 </section>
 
@@ -849,6 +1081,12 @@ function setAuthSession(token, user) {
 }
 
 function logout() {
+  if (typeof stopQrScanner === 'function') {
+    try { stopQrScanner(); } catch(e) {}
+  }
+  if (typeof stopEmergencyQrScanner === 'function') {
+    try { stopEmergencyQrScanner(); } catch(e) {}
+  }
   if (cachedQrBlobUrl) {
     try { URL.revokeObjectURL(cachedQrBlobUrl); } catch(e) {}
     cachedQrBlobUrl = null;
@@ -1027,8 +1265,11 @@ const PATIENT_NAV=[
   ['v-history','🕘','Access History']
 ];
 const PROVIDER_NAV=[
-  ['v-pdash','🏠','Dashboard'],['v-pdash','🧑‍🤝‍🧑','Patients'],
-  ['v-scan','▦','Scan QR'],['v-preq','📥','Access Requests'],['v-pdash','🕘','Access History']
+  ['v-pdash','🏠','Dashboard'],
+  ['v-scan','📷','Scan QR'],
+  ['v-emerg-scan','🚨','Emergency Scan'],
+  ['v-preq','📥','Access Requests'],
+  ['v-pdash','🕘','Access History']
 ];
 
 function buildNav(){
@@ -1098,6 +1339,14 @@ function highlightNav(id){
 function go(id, reset){
   if(reset) navStack=[];
   const cur = document.querySelector('.view.active');
+  if(cur && (cur.id === 'v-scan' || cur.id === 'v-emerg-scan') && id !== cur.id){
+    if (typeof stopQrScanner === 'function') {
+      try { stopQrScanner(); } catch(e) {}
+    }
+    if (typeof stopEmergencyQrScanner === 'function') {
+      try { stopEmergencyQrScanner(); } catch(e) {}
+    }
+  }
   if(cur && cur.id!==id) navStack.push(cur.id);
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const el=document.getElementById(id);
@@ -1108,7 +1357,27 @@ function go(id, reset){
   renderDynamic(id);
   window.scrollTo(0,0);
 }
-function goBack(){ if(navStack.length){ const id=navStack.pop(); document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); const el=document.getElementById(id); el.classList.add('active'); document.getElementById('topTitle').textContent=el.dataset.title; document.getElementById('backBtn').style.visibility=navStack.length?'visible':'hidden'; highlightNav(id); renderDynamic(id);} }
+function goBack(){
+  if(navStack.length){
+    const cur = document.querySelector('.view.active');
+    if(cur && (cur.id === 'v-scan' || cur.id === 'v-emerg-scan')){
+      if (typeof stopQrScanner === 'function') {
+        try { stopQrScanner(); } catch(e) {}
+      }
+      if (typeof stopEmergencyQrScanner === 'function') {
+        try { stopEmergencyQrScanner(); } catch(e) {}
+      }
+    }
+    const id=navStack.pop();
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    const el=document.getElementById(id);
+    el.classList.add('active');
+    document.getElementById('topTitle').textContent=el.dataset.title;
+    document.getElementById('backBtn').style.visibility=navStack.length?'visible':'hidden';
+    highlightNav(id);
+    renderDynamic(id);
+  }
+}
 
 function toast(msg){
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
@@ -1444,6 +1713,10 @@ function renderProviderDashboardUI(data) {
 }
 
 async function lookupPatient(customToken) {
+  if (typeof stopQrScanner === 'function') {
+    try { stopQrScanner(); } catch(e) {}
+  }
+
   const inp = document.getElementById('scan-qr-token-input');
   let token = customToken || (inp ? inp.value.trim() : '');
   
@@ -1466,6 +1739,9 @@ async function lookupPatient(customToken) {
   try {
     const data = await apiRequest(`/api/patients/lookup/${encodeURIComponent(token)}`);
     if (data) {
+      if (typeof stopQrScanner === 'function') {
+        try { stopQrScanner(); } catch(e) {}
+      }
       state.scannedPatient = { ...data, qr_token: token };
       localStorage.setItem('medtrace_last_qr_token', token);
       renderScannedPatientUI(state.scannedPatient);
@@ -1496,6 +1772,309 @@ function renderScannedPatientUI(patient) {
   const emergEl = document.getElementById('pfound-emergency');
   if (emergEl) emergEl.textContent = patient.emergency_mode_available ? 'Available' : 'Unavailable';
 }
+
+/* ==========================================================================
+   GROUP 13: REAL-TIME PROVIDER QR CAMERA SCANNER
+   ========================================================================== */
+
+let html5QrScanner = null;
+let isScannerActive = false;
+let currentFacingMode = "environment"; // Defaults to rear camera on mobile, webcam on PC
+let lastScannedToken = null;
+let lastScanTimestamp = 0;
+
+/**
+ * Extract clean qr_token from raw QR decoded payload (URL, JSON, or raw string)
+ */
+function extractQrToken(rawText) {
+  if (!rawText || typeof rawText !== 'string') return '';
+  const text = rawText.trim();
+  
+  // 1. JSON payload support: {"qr_token": "..."} or {"token": "..."}
+  if (text.startsWith('{') && text.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.qr_token) return String(parsed.qr_token).trim();
+      if (parsed.token) return String(parsed.token).trim();
+      if (parsed.id) return String(parsed.id).trim();
+    } catch(e) {}
+  }
+  
+  // 2. URL payload support: /emergency/:token, /lookup/:token, or ?qr_token=...
+  if (text.includes('://') || text.includes('/emergency/') || text.includes('qr_token=') || text.includes('/lookup/')) {
+    try {
+      const urlObj = new URL(text.includes('://') ? text : 'https://medtrace.app/' + text.replace(/^\/+/, ''));
+      const paramToken = urlObj.searchParams.get('qr_token') || urlObj.searchParams.get('token');
+      if (paramToken) return paramToken.trim();
+      
+      const pathParts = urlObj.pathname.split('/').filter(Boolean);
+      const targetIdx = pathParts.findIndex(p => p === 'emergency' || p === 'lookup' || p === 'patients');
+      if (targetIdx !== -1 && pathParts[targetIdx + 1]) {
+        if (pathParts[targetIdx] === 'patients' && pathParts[targetIdx + 1] === 'lookup' && pathParts[targetIdx + 2]) {
+          return pathParts[targetIdx + 2].trim();
+        }
+        return pathParts[targetIdx + 1].trim();
+      }
+      const lastPart = pathParts[pathParts.length - 1];
+      if (lastPart && /^[a-zA-Z0-9_\-]{8,}$/.test(lastPart)) {
+        return lastPart.trim();
+      }
+    } catch(e) {
+      const match = text.match(/(?:emergency|lookup)[/=:]([a-zA-Z0-9_\-]+)/i);
+      if (match && match[1]) return match[1].trim();
+    }
+  }
+
+  // 3. Raw token: alphanumeric, underscores, hyphens
+  return text.replace(/['"\s]/g, '');
+}
+
+/**
+ * Start or resume the live QR camera scanner
+ */
+async function startQrScanner() {
+  const statusEl = document.getElementById('scanner-status-text');
+  const statusContainer = document.getElementById('scanner-status');
+  const errorBox = document.getElementById('scanner-error-box');
+  const overlay = document.getElementById('qr-overlay');
+  const stopBtn = document.getElementById('btn-stop-camera');
+
+  if (errorBox) errorBox.style.display = 'none';
+  if (overlay) overlay.style.display = 'flex';
+  
+  if (statusEl) statusEl.textContent = 'Requesting camera access...';
+  if (statusContainer) statusContainer.style.color = 'var(--blue)';
+
+  // If already running, do nothing
+  if (isScannerActive && html5QrScanner) {
+    if (statusEl) statusEl.textContent = 'Camera active — point at patient QR';
+    if (statusContainer) statusContainer.style.color = '#16a34a';
+    return;
+  }
+
+  // Check if Html5Qrcode library is loaded
+  if (typeof Html5Qrcode === 'undefined') {
+    setTimeout(() => {
+      if (typeof Html5Qrcode !== 'undefined') {
+        startQrScanner();
+      } else {
+        handleCameraError('QR scanner library is still initializing. Please check connection or retry.');
+      }
+    }, 400);
+    return;
+  }
+
+  try {
+    if (!html5QrScanner) {
+      html5QrScanner = new Html5Qrcode("qr-reader");
+    }
+
+    const config = {
+      fps: 15,
+      qrbox: { width: 220, height: 220 },
+      aspectRatio: 1.0
+    };
+
+    await html5QrScanner.start(
+      { facingMode: currentFacingMode },
+      config,
+      onQrScanSuccess,
+      onQrScanError
+    );
+
+    isScannerActive = true;
+    if (statusEl) statusEl.textContent = 'Camera active — point at patient QR';
+    if (statusContainer) statusContainer.style.color = '#16a34a';
+    if (stopBtn) stopBtn.textContent = '⏸ Pause Camera';
+  } catch (err) {
+    console.warn('Camera scanner initialization error:', err);
+    handleCameraError(err);
+  }
+}
+
+/**
+ * Stop/release the live camera hardware
+ */
+async function stopQrScanner() {
+  const statusEl = document.getElementById('scanner-status-text');
+  const statusContainer = document.getElementById('scanner-status');
+  const stopBtn = document.getElementById('btn-stop-camera');
+
+  if (html5QrScanner && isScannerActive) {
+    try {
+      await html5QrScanner.stop();
+    } catch (e) {
+      console.warn('Error releasing camera stream:', e);
+    }
+  }
+  isScannerActive = false;
+
+  if (statusEl) statusEl.textContent = 'Camera paused';
+  if (statusContainer) statusContainer.style.color = 'var(--gray)';
+  if (stopBtn) stopBtn.textContent = '▶ Start Camera';
+}
+
+/**
+ * Toggle camera pause / resume
+ */
+function toggleQrScanningState() {
+  if (isScannerActive) {
+    stopQrScanner();
+  } else {
+    startQrScanner();
+  }
+}
+
+/**
+ * Toggle front / rear camera
+ */
+async function toggleQrCamera() {
+  await stopQrScanner();
+  currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+  await startQrScanner();
+}
+
+/**
+ * Handle camera failure, permissions rejection, or device absence
+ */
+function handleCameraError(err) {
+  isScannerActive = false;
+  const statusEl = document.getElementById('scanner-status-text');
+  const statusContainer = document.getElementById('scanner-status');
+  const errorBox = document.getElementById('scanner-error-box');
+  const errorMsg = document.getElementById('scanner-error-msg');
+  const overlay = document.getElementById('qr-overlay');
+  const stopBtn = document.getElementById('btn-stop-camera');
+
+  if (overlay) overlay.style.display = 'none';
+  if (errorBox) errorBox.style.display = 'flex';
+  if (stopBtn) stopBtn.textContent = '▶ Start Camera';
+
+  let friendlyMsg = 'Camera access could not be established.';
+  const raw = String(err && (err.message || err)).toLowerCase();
+
+  if (raw.includes('notallowed') || raw.includes('permission') || raw.includes('denied')) {
+    friendlyMsg = 'Camera permission was denied. Please allow camera access in your browser settings to scan patient QR codes.';
+  } else if (raw.includes('notfound') || raw.includes('devices not found') || raw.includes('no camera') || raw.includes('overconstrained')) {
+    friendlyMsg = 'No active camera was detected on this device. You can use manual entry or upload a QR image below.';
+  } else if (raw.includes('notreadable') || raw.includes('in use') || raw.includes('busy')) {
+    friendlyMsg = 'Camera is currently in use by another app. Please close other video programs and retry.';
+  } else if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    friendlyMsg = 'Browser camera access requires HTTPS. Please access the application over HTTPS.';
+  } else if (typeof err === 'string') {
+    friendlyMsg = err;
+  }
+
+  if (errorMsg) errorMsg.textContent = friendlyMsg;
+  if (statusEl) statusEl.textContent = 'Camera unavailable';
+  if (statusContainer) statusContainer.style.color = '#dc2626';
+
+  // Automatically reveal manual fallback so the user is never stranded
+  const manualSec = document.getElementById('manual-input-section');
+  const manualIcon = document.getElementById('manual-toggle-icon');
+  if (manualSec) manualSec.style.display = 'block';
+  if (manualIcon) manualIcon.textContent = '▼';
+}
+
+/**
+ * Successful QR Code detection handler
+ */
+async function onQrScanSuccess(decodedText, decodedResult) {
+  const now = Date.now();
+  // Debounce to prevent multiple triggers within 2.5s
+  if (now - lastScanTimestamp < 2500) return;
+  lastScanTimestamp = now;
+
+  console.log('Scanned QR code content:', decodedText);
+  const token = extractQrToken(decodedText);
+
+  if (!token) {
+    toast('Unrecognized QR format. Please scan a valid MedTrace QR passport.');
+    return;
+  }
+
+  const statusEl = document.getElementById('scanner-status-text');
+  const statusContainer = document.getElementById('scanner-status');
+  if (statusEl) statusEl.textContent = '✓ QR Code detected! Looking up patient...';
+  if (statusContainer) statusContainer.style.color = '#16a34a';
+
+  toast('✓ QR detected! Fetching patient details...');
+
+  // Stop camera immediately upon successful scan
+  await stopQrScanner();
+
+  // Populate manual field as visual confirmation
+  const inp = document.getElementById('scan-qr-token-input');
+  if (inp) inp.value = token;
+
+  // Execute lookup
+  await lookupPatient(token);
+}
+
+/**
+ * Scan cycle callback when no QR is in frame
+ */
+function onQrScanError(errorMessage) {
+  // Normal scanning cycle — no code found in this frame
+}
+
+/**
+ * Upload QR code image fallback
+ */
+async function handleQrFileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  toast('Analyzing QR image...');
+  try {
+    if (!html5QrScanner) {
+      html5QrScanner = new Html5Qrcode("qr-reader");
+    }
+    const decodedText = await html5QrScanner.scanFile(file, true);
+    if (decodedText) {
+      await onQrScanSuccess(decodedText);
+    }
+  } catch (err) {
+    console.error('File scan error:', err);
+    toast('Could not detect a QR code in this image. Please ensure the image is clear.');
+  } finally {
+    event.target.value = '';
+  }
+}
+
+/**
+ * Toggle manual input accordion
+ */
+function toggleManualInput() {
+  const sec = document.getElementById('manual-input-section');
+  const icon = document.getElementById('manual-toggle-icon');
+  if (!sec) return;
+  const isHidden = sec.style.display === 'none' || !sec.style.display;
+  sec.style.display = isHidden ? 'block' : 'none';
+  if (icon) icon.textContent = isHidden ? '▼' : '▶';
+}
+
+/**
+ * Simulation helper for demo
+ */
+function simulateProviderScan() {
+  const token = localStorage.getItem('medtrace_last_qr_token') || (state.profile ? state.profile.qr_token : '') || '8nrA7qUNyqoLiCwPJeWh-WADhRCrT9LW';
+  const inp = document.getElementById('scan-qr-token-input');
+  if (inp) inp.value = token;
+  if (typeof stopQrScanner === 'function') stopQrScanner();
+  lookupPatient(token);
+}
+
+window.addEventListener('beforeunload', () => { 
+  if (typeof stopQrScanner === 'function') stopQrScanner(); 
+  if (typeof stopEmergencyQrScanner === 'function') stopEmergencyQrScanner(); 
+});
+document.addEventListener('visibilitychange', () => { 
+  if (document.hidden) {
+    if (typeof stopQrScanner === 'function') stopQrScanner(); 
+    if (typeof stopEmergencyQrScanner === 'function') stopEmergencyQrScanner(); 
+  }
+});
 
 /* ---- Group 5: Consent / Access Request Workflow ---- */
 async function submitAccessRequest() {
@@ -2195,6 +2774,10 @@ function renderEmergencyInfoUI(data) {
 }
 
 async function lookupEmergency(customToken) {
+  if (typeof stopEmergencyQrScanner === 'function') {
+    try { stopEmergencyQrScanner(); } catch(e) {}
+  }
+
   const inp = document.getElementById('emerg-token-input');
   let token = customToken || (inp ? inp.value.trim() : '');
 
@@ -2228,18 +2811,21 @@ async function lookupEmergency(customToken) {
 function simulateEmergencyScan() {
   const token = (state.scannedPatient && state.scannedPatient.qr_token)
     || (state.profile && state.profile.qr_token)
-    || localStorage.getItem('medtrace_last_qr_token');
+    || localStorage.getItem('medtrace_last_qr_token')
+    || '8nrA7qUNyqoLiCwPJeWh-WADhRCrT9LW';
 
-  if (!token) {
-    toast('No saved QR token found to simulate. Please paste a token.');
-    return;
-  }
   const inp = document.getElementById('emerg-token-input');
   if (inp) inp.value = token;
+  if (typeof stopEmergencyQrScanner === 'function') {
+    try { stopEmergencyQrScanner(); } catch(e) {}
+  }
   lookupEmergency(token);
 }
 
 function exitEmergencyFlow() {
+  if (typeof stopEmergencyQrScanner === 'function') {
+    try { stopEmergencyQrScanner(); } catch(e) {}
+  }
   if (state.auth && state.auth.token) {
     if (state.role === 'provider') {
       go('v-pdash');
@@ -2249,6 +2835,235 @@ function exitEmergencyFlow() {
   } else {
     go('v-welcome', true);
   }
+}
+
+/* ==========================================================================
+   REAL-TIME EMERGENCY QR CAMERA SCANNER
+   ========================================================================== */
+
+let html5EmergencyQrScanner = null;
+let isEmergencyScannerActive = false;
+let currentEmergencyFacingMode = "environment";
+let lastEmergencyScanTimestamp = 0;
+
+/**
+ * Start or resume the live emergency QR camera scanner
+ */
+async function startEmergencyQrScanner() {
+  const statusEl = document.getElementById('emerg-scanner-status-text');
+  const statusContainer = document.getElementById('emerg-scanner-status');
+  const errorBox = document.getElementById('emerg-scanner-error-box');
+  const overlay = document.getElementById('emerg-qr-overlay');
+  const stopBtn = document.getElementById('emerg-btn-stop-camera');
+
+  if (errorBox) errorBox.style.display = 'none';
+  if (overlay) overlay.style.display = 'flex';
+
+  if (statusEl) statusEl.textContent = 'Requesting emergency camera access...';
+  if (statusContainer) statusContainer.style.color = '#e11d48';
+
+  // If already active, do not re-initialize
+  if (isEmergencyScannerActive && html5EmergencyQrScanner) {
+    if (statusEl) statusEl.textContent = '● Emergency Camera active — point at patient QR';
+    if (statusContainer) statusContainer.style.color = '#16a34a';
+    return;
+  }
+
+  // Ensure library is loaded
+  if (typeof Html5Qrcode === 'undefined') {
+    setTimeout(() => {
+      if (typeof Html5Qrcode !== 'undefined') {
+        startEmergencyQrScanner();
+      } else {
+        handleEmergencyCameraError('QR scanner library is still initializing. Please check connection or retry.');
+      }
+    }, 400);
+    return;
+  }
+
+  try {
+    if (!html5EmergencyQrScanner) {
+      html5EmergencyQrScanner = new Html5Qrcode("emerg-qr-reader");
+    }
+
+    const config = {
+      fps: 15,
+      qrbox: { width: 220, height: 220 },
+      aspectRatio: 1.0
+    };
+
+    await html5EmergencyQrScanner.start(
+      { facingMode: currentEmergencyFacingMode },
+      config,
+      onEmergencyQrScanSuccess,
+      onEmergencyQrScanError
+    );
+
+    isEmergencyScannerActive = true;
+    if (statusEl) statusEl.textContent = '● Emergency Camera active — point at patient QR';
+    if (statusContainer) statusContainer.style.color = '#16a34a';
+    if (stopBtn) stopBtn.textContent = '⏸ Pause Camera';
+  } catch (err) {
+    console.warn('Emergency camera scanner error:', err);
+    handleEmergencyCameraError(err);
+  }
+}
+
+/**
+ * Stop/release the emergency camera hardware
+ */
+async function stopEmergencyQrScanner() {
+  const statusEl = document.getElementById('emerg-scanner-status-text');
+  const statusContainer = document.getElementById('emerg-scanner-status');
+  const stopBtn = document.getElementById('emerg-btn-stop-camera');
+
+  if (html5EmergencyQrScanner && isEmergencyScannerActive) {
+    try {
+      await html5EmergencyQrScanner.stop();
+    } catch (e) {
+      console.warn('Error releasing emergency camera stream:', e);
+    }
+  }
+  isEmergencyScannerActive = false;
+
+  if (statusEl) statusEl.textContent = 'Camera paused';
+  if (statusContainer) statusContainer.style.color = 'var(--gray)';
+  if (stopBtn) stopBtn.textContent = '▶ Start Camera';
+}
+
+/**
+ * Toggle emergency camera pause / resume
+ */
+function toggleEmergencyQrScanningState() {
+  if (isEmergencyScannerActive) {
+    stopEmergencyQrScanner();
+  } else {
+    startEmergencyQrScanner();
+  }
+}
+
+/**
+ * Toggle front / rear camera in emergency scanner
+ */
+async function toggleEmergencyQrCamera() {
+  await stopEmergencyQrScanner();
+  currentEmergencyFacingMode = currentEmergencyFacingMode === "environment" ? "user" : "environment";
+  await startEmergencyQrScanner();
+}
+
+/**
+ * Handle emergency camera failures or permission denials
+ */
+function handleEmergencyCameraError(err) {
+  isEmergencyScannerActive = false;
+  const statusEl = document.getElementById('emerg-scanner-status-text');
+  const statusContainer = document.getElementById('emerg-scanner-status');
+  const errorBox = document.getElementById('emerg-scanner-error-box');
+  const errorMsg = document.getElementById('emerg-scanner-error-msg');
+  const overlay = document.getElementById('emerg-qr-overlay');
+  const stopBtn = document.getElementById('emerg-btn-stop-camera');
+
+  if (overlay) overlay.style.display = 'none';
+  if (errorBox) errorBox.style.display = 'flex';
+  if (stopBtn) stopBtn.textContent = '▶ Start Camera';
+
+  let friendlyMsg = 'Emergency camera access could not be established.';
+  const raw = String(err && (err.message || err)).toLowerCase();
+
+  if (raw.includes('notallowed') || raw.includes('permission') || raw.includes('denied')) {
+    friendlyMsg = 'Camera permission was denied. Please allow camera access in your browser settings to scan patient QR codes.';
+  } else if (raw.includes('notfound') || raw.includes('devices not found') || raw.includes('no camera') || raw.includes('overconstrained')) {
+    friendlyMsg = 'No active camera was detected on this device. You can use manual entry or upload a QR image below.';
+  } else if (raw.includes('notreadable') || raw.includes('in use') || raw.includes('busy')) {
+    friendlyMsg = 'Camera is currently in use by another app. Please close other video programs and retry.';
+  } else if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    friendlyMsg = 'Browser camera access requires HTTPS. Please access the application over HTTPS.';
+  } else if (typeof err === 'string') {
+    friendlyMsg = err;
+  }
+
+  if (errorMsg) errorMsg.textContent = friendlyMsg;
+  if (statusEl) statusEl.textContent = 'Camera unavailable';
+  if (statusContainer) statusContainer.style.color = '#dc2626';
+
+  const manualSec = document.getElementById('emerg-manual-input-section');
+  const manualIcon = document.getElementById('emerg-manual-toggle-icon');
+  if (manualSec) manualSec.style.display = 'block';
+  if (manualIcon) manualIcon.textContent = '▼';
+}
+
+/**
+ * Successful QR Code detection handler for Emergency mode
+ */
+async function onEmergencyQrScanSuccess(decodedText, decodedResult) {
+  const now = Date.now();
+  if (now - lastEmergencyScanTimestamp < 2500) return;
+  lastEmergencyScanTimestamp = now;
+
+  console.log('Emergency QR code detected:', decodedText);
+  const token = extractQrToken(decodedText);
+
+  if (!token) {
+    toast('Unrecognized QR format. Please scan a valid MedTrace QR passport.');
+    return;
+  }
+
+  const statusEl = document.getElementById('emerg-scanner-status-text');
+  const statusContainer = document.getElementById('emerg-scanner-status');
+  if (statusEl) statusEl.textContent = '✓ Emergency QR detected! Loading profile...';
+  if (statusContainer) statusContainer.style.color = '#16a34a';
+
+  toast('🚨 Emergency QR detected! Fetching critical profile...');
+
+  await stopEmergencyQrScanner();
+
+  const inp = document.getElementById('emerg-token-input');
+  if (inp) inp.value = token;
+
+  await lookupEmergency(token);
+}
+
+/**
+ * Empty frame cycle callback
+ */
+function onEmergencyQrScanError(errorMessage) {
+  // Normal frame cycle
+}
+
+/**
+ * Upload QR code image fallback for Emergency scanner
+ */
+async function handleEmergencyQrFileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  toast('Analyzing emergency QR image...');
+  try {
+    if (!html5EmergencyQrScanner) {
+      html5EmergencyQrScanner = new Html5Qrcode("emerg-qr-reader");
+    }
+    const decodedText = await html5EmergencyQrScanner.scanFile(file, true);
+    if (decodedText) {
+      await onEmergencyQrScanSuccess(decodedText);
+    }
+  } catch (err) {
+    console.error('Emergency file scan error:', err);
+    toast('Could not detect a QR code in this image. Please ensure the image is clear.');
+  } finally {
+    event.target.value = '';
+  }
+}
+
+/**
+ * Toggle emergency manual input accordion
+ */
+function toggleEmergencyManualInput() {
+  const sec = document.getElementById('emerg-manual-input-section');
+  const icon = document.getElementById('emerg-manual-toggle-icon');
+  if (!sec) return;
+  const isHidden = sec.style.display === 'none' || !sec.style.display;
+  sec.style.display = isHidden ? 'block' : 'none';
+  if (icon) icon.textContent = isHidden ? '▼' : '▶';
 }
 
 async function loadPatientProfile(){
@@ -2877,9 +3692,12 @@ function renderDynamic(id){
   }
   if(id==='v-scan'){
     const inp = document.getElementById('scan-qr-token-input');
-    const lastToken = localStorage.getItem('medtrace_last_qr_token') || state.profile.qr_token;
+    const lastToken = localStorage.getItem('medtrace_last_qr_token') || (state.profile ? state.profile.qr_token : '');
     if(inp && !inp.value && lastToken){
       inp.value = lastToken;
+    }
+    if (typeof startQrScanner === 'function') {
+      startQrScanner();
     }
   }
   if(id==='v-pfound'){
@@ -2906,6 +3724,9 @@ function renderDynamic(id){
     const lastToken = localStorage.getItem('medtrace_last_qr_token') || (state.profile ? state.profile.qr_token : '');
     if(inp && !inp.value && lastToken){
       inp.value = lastToken;
+    }
+    if (typeof startEmergencyQrScanner === 'function') {
+      startEmergencyQrScanner();
     }
   }
   if(id==='v-emerg-info'){
