@@ -255,7 +255,8 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <div id="topbar">
       <button id="backBtn" onclick="goBack()">&#8592;</button>
       <h2 id="topTitle">MedTrace</h2>
-      <div id="topbar-status-dot" style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;cursor:pointer" title="Click to re-check connectivity" onclick="backendHealthChecked=false;checkBackendHealth();"></div>
+      <button id="mobileSwitchRoleBtn" onclick="switchRole()" style="margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff!important;font-size:0.75rem!important;font-weight:700;color:var(--blue)!important;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">⇄ Switch to Provider</button>
+      <div id="topbar-status-dot" style="margin-left:8px;width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;cursor:pointer;flex-shrink:0;" title="Click to re-check connectivity" onclick="backendHealthChecked=false;checkBackendHealth();"></div>
     </div>
     <div id="content"><div class="wrap" id="viewport"></div></div>
     <nav id="bottomnav"></nav>
@@ -332,7 +333,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     <p class="step">Step 1 of 4</p>
     <h2 class="title">Tell Us About Yourself</h2>
     <label>Full Name</label><input type="text" id="p-name">
-    <label>Date of Birth</label><input type="text" id="p-dob" placeholder="DD / MM / YYYY">
+    <label>Date of Birth</label><input type="date" id="p-dob" onclick="try{this.showPicker()}catch(e){}" onfocus="try{this.showPicker()}catch(e){}">
     <label>Blood Group</label>
     <select id="p-blood"><option>Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
     <label>Emergency Contact</label><input type="text" id="p-contact" placeholder="Name and phone number">
@@ -395,7 +396,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     </div>
     <p class="sub" id="created-passport-id" style="font-weight:700;margin-bottom:14px;color:var(--navy);font-size:1.05rem;"></p>
     <button class="btn btn-primary" onclick="go('v-dash')">Go to Dashboard</button>
-    <button class="btn btn-outline" style="margin-top:8px" onclick="lookupEmergency(state.profile.qr_token)">🚨 Preview Emergency Screen</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="if(state.profile && state.profile.qr_token){lookupEmergency(state.profile.qr_token);}else if(localStorage.getItem('medtrace_last_qr_token')){lookupEmergency(localStorage.getItem('medtrace_last_qr_token'));}else{go('v-emerg2');}">🚨 Preview Emergency Screen</button>
   </div>
 </section>
 
@@ -924,7 +925,8 @@ const state = {
   profile:{
     name: (savedUser && savedUser.full_name) ? savedUser.full_name : 'Jenny',
     dob:'',blood:'Select',contact:'',
-    passport_id: savedPassportId
+    passport_id: savedPassportId,
+    qr_token: localStorage.getItem('medtrace_last_qr_token') || ''
   },
   conditions:[], procedures:[], allergies:[], medications:[],
   savedConditions: new Set(),
@@ -1093,6 +1095,7 @@ function logout() {
   }
   state.auth = { token: null, user: null };
   state.profile.passport_id = '';
+  state.profile.qr_token = '';
   state.dashboard = null;
   state.records = null;
   state.providerDashboard = null;
@@ -1109,6 +1112,7 @@ function logout() {
   localStorage.removeItem('medtrace_token');
   localStorage.removeItem('medtrace_user');
   localStorage.removeItem('medtrace_passport_id');
+  localStorage.removeItem('medtrace_last_qr_token');
   toast('Logged out successfully');
   buildNav();
   go('v-welcome', true);
@@ -1290,6 +1294,13 @@ function buildNav(){
     switchBtn.textContent = isAuth ? `Switch to ${target} Portal (Log out)` : `Switch to ${target} Portal`;
   }
 
+  const mobileSwitchBtn = document.getElementById('mobileSwitchRoleBtn');
+  if (mobileSwitchBtn) {
+    const target = state.role === 'patient' ? 'Provider' : 'Patient';
+    mobileSwitchBtn.textContent = `⇄ Switch to ${target}`;
+    mobileSwitchBtn.title = isAuth ? `Switch to ${target} Portal (Log out)` : `Switch to ${target} Portal`;
+  }
+
   let navHtml = items.map(i=>`<a onclick="handleNavClick('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
   if (isAuth) {
     navHtml += `<a onclick="logout()" style="color:#ef4444;margin-top:14px;cursor:pointer"><span>🚪</span>Log out</a>`;
@@ -1316,15 +1327,26 @@ function switchRole(){
     }
     state.auth = { token: null, user: null };
     state.profile.passport_id = '';
+    state.profile.qr_token = '';
     state.dashboard = null;
     state.records = null;
     state.providerDashboard = null;
     state.scannedPatient = null;
+    state.accessRequests = [];
+    state.accessHistory = [];
+    state.activeRequestId = null;
+    state.lastSentRequest = null;
+    state.activePatientId = null;
+    state.activePatientName = '';
+    state.providerPatientRecords = null;
+    state.emergencyProfile = null;
+    state.emergencyToken = '';
     localStorage.removeItem('medtrace_token');
     localStorage.removeItem('medtrace_user');
     localStorage.removeItem('medtrace_passport_id');
-    toast(`Switched to ${targetRole === 'provider' ? 'Healthcare Provider' : 'Patient'} portal`);
+    localStorage.removeItem('medtrace_last_qr_token');
   }
+  toast(`Switched to ${targetRole === 'provider' ? 'Healthcare Provider' : 'Patient'} portal`);
   state.role = targetRole;
   buildNav();
   go(targetRole === 'patient' ? 'v-welcome' : 'v-plogin', true);
@@ -2773,7 +2795,11 @@ function renderEmergencyInfoUI(data) {
   }
 }
 
+let isEmergencyLookupInProgress = false;
+
 async function lookupEmergency(customToken) {
+  if (isEmergencyLookupInProgress) return;
+
   if (typeof stopEmergencyQrScanner === 'function') {
     try { stopEmergencyQrScanner(); } catch(e) {}
   }
@@ -2791,6 +2817,7 @@ async function lookupEmergency(customToken) {
     return;
   }
 
+  isEmergencyLookupInProgress = true;
   state.emergencyToken = token;
   go('v-emerg-info');
   setEmergencyLoading(true);
@@ -2803,8 +2830,12 @@ async function lookupEmergency(customToken) {
     toast(`✓ Emergency profile retrieved: ${data.patient_name || 'Patient'}`);
   } catch (err) {
     console.error('Emergency lookup error:', err);
+    state.emergencyToken = '';
+    state.emergencyProfile = null;
     setEmergencyLoading(false);
     renderEmergencyError(err.message || 'Emergency record not found');
+  } finally {
+    isEmergencyLookupInProgress = false;
   }
 }
 
@@ -3126,7 +3157,10 @@ async function saveP1(){
       state.profile.passport_id = updated.passport_id;
       localStorage.setItem('medtrace_passport_id', updated.passport_id);
     }
-    if (updated.qr_token) state.profile.qr_token = updated.qr_token;
+    if (updated.qr_token) {
+      state.profile.qr_token = updated.qr_token;
+      localStorage.setItem('medtrace_last_qr_token', updated.qr_token);
+    }
     toast('✓ Personal details saved');
     go('v-ob2');
   } catch (err) {
@@ -3565,7 +3599,10 @@ async function confirmPassport(){
         state.profile.passport_id = updated.passport_id;
         localStorage.setItem('medtrace_passport_id', updated.passport_id);
       }
-      if (updated.qr_token) state.profile.qr_token = updated.qr_token;
+      if (updated.qr_token) {
+        state.profile.qr_token = updated.qr_token;
+        localStorage.setItem('medtrace_last_qr_token', updated.qr_token);
+      }
     }
     toast('✓ MedTrace Passport created: ' + (state.profile.passport_id || ''));
     go('v-created');
@@ -3604,7 +3641,16 @@ function renderDynamic(id){
     const pName = document.getElementById('p-name');
     if(pName && !pName.value){ pName.value = state.profile.name || ''; }
     const pDob = document.getElementById('p-dob');
-    if(pDob && !pDob.value && state.profile.dob){ pDob.value = state.profile.dob; }
+    if(pDob && !pDob.value && state.profile.dob){
+      let dVal = String(state.profile.dob).trim();
+      if (dVal.includes('/')) {
+        const parts = dVal.split('/').map(s => s.trim());
+        if (parts.length === 3 && parts[2].length === 4) {
+          dVal = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      }
+      try { pDob.value = dVal; } catch(e) {}
+    }
     const pBlood = document.getElementById('p-blood');
     if(pBlood && state.profile.blood && state.profile.blood !== 'Select'){ pBlood.value = state.profile.blood; }
     const pContact = document.getElementById('p-contact');
@@ -3732,8 +3778,6 @@ function renderDynamic(id){
   if(id==='v-emerg-info'){
     if (state.emergencyProfile) {
       renderEmergencyInfoUI(state.emergencyProfile);
-    } else if (state.emergencyToken) {
-      lookupEmergency(state.emergencyToken);
     }
   }
 }
