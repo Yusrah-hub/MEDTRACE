@@ -1646,20 +1646,26 @@ async function loadPatientRecords() {
         }
       }
       if (Array.isArray(data.conditions)) {
-        state.conditions = data.conditions.map(c => c.name);
-        data.conditions.forEach(c => state.savedConditions.add(c.name));
+        state.conditions = data.conditions.map(c => ({ id: c.id, name: c.name, is_major: c.is_major }));
+        state.savedConditions = new Set(data.conditions.map(c => c.name));
       }
       if (Array.isArray(data.allergies)) {
         state.allergies = data.allergies;
-        data.allergies.forEach(a => state.savedAllergies.add(a.name || a.allergen));
+        state.savedAllergies = new Set(data.allergies.map(a => a.name || a.allergen));
       }
       if (Array.isArray(data.medications)) {
         state.medications = data.medications;
-        data.medications.forEach(m => state.savedMedications.add(m.name));
+        state.savedMedications = new Set(data.medications.map(m => m.name));
       }
       if (Array.isArray(data.procedures)) {
-        state.procedures = data.procedures.map(p => p.name + (p.performed_on ? ' - ' + p.performed_on : ''));
-        data.procedures.forEach(p => state.savedProcedures.add(p.name));
+        state.procedures = data.procedures.map(p => ({
+          id: p.id,
+          name: p.name,
+          performed_on: p.performed_on,
+          is_major: p.is_major,
+          raw: p.name + (p.performed_on ? ' - ' + p.performed_on : '')
+        }));
+        state.savedProcedures = new Set(data.procedures.map(p => p.name));
       }
       renderRecordsUI(data);
     }
@@ -1684,9 +1690,13 @@ function renderRecordsUI(data) {
 
   const pfCond = document.getElementById('pf-cond');
   if (pfCond) {
-    const conds = (data && data.conditions) || [];
+    const conds = (data && data.conditions) || (state.records && state.records.conditions) || state.conditions || [];
     if (conds.length) {
-      pfCond.innerHTML = conds.map(c => `<span class="chip">${c.name}${c.is_major ? ' (Major)' : ''}</span>`).join('');
+      pfCond.innerHTML = conds.map(c => {
+        const name = typeof c === 'string' ? c : (c.name || '');
+        const isMaj = typeof c === 'object' ? c.is_major : true;
+        return `<span class="chip">${name}${isMaj ? ' (Major)' : ''}</span>`;
+      }).join('');
     } else {
       pfCond.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
     }
@@ -1725,9 +1735,12 @@ function renderRecordsUI(data) {
 
   const pfProc = document.getElementById('pf-proc');
   if (pfProc) {
-    const procs = (data && data.procedures) || [];
+    const procs = (data && data.procedures) || (state.records && state.records.procedures) || state.procedures || [];
     if (procs.length) {
-      pfProc.innerHTML = procs.map(p => `<span class="chip">${p.name}${p.performed_on ? ' - ' + p.performed_on : ''}</span>`).join('');
+      pfProc.innerHTML = procs.map(p => {
+        const text = typeof p === 'string' ? p : (p.raw || `${p.name || ''}${p.performed_on ? ' - ' + p.performed_on : ''}`);
+        return `<span class="chip">${text}</span>`;
+      }).join('');
     } else {
       pfProc.innerHTML = '<p class="sub" style="margin:0">None added</p>';
     }
@@ -1735,9 +1748,13 @@ function renderRecordsUI(data) {
 
   const emCond = document.getElementById('em-cond');
   if (emCond) {
-    const conds = (data && data.conditions) || [];
+    const conds = (data && data.conditions) || (state.records && state.records.conditions) || state.conditions || [];
     if (conds.length) {
-      emCond.innerHTML = conds.map(c => `<p>${c.name}${c.is_major ? ' (Major)' : ''}</p>`).join('');
+      emCond.innerHTML = conds.map(c => {
+        const name = typeof c === 'string' ? c : (c.name || '');
+        const isMaj = typeof c === 'object' ? c.is_major : true;
+        return `<p>${name}${isMaj ? ' (Major)' : ''}</p>`;
+      }).join('');
     } else {
       emCond.innerHTML = '<p>None reported</p>';
     }
@@ -3277,21 +3294,38 @@ async function addCondition(){
   const val = inp ? inp.value.trim() : '';
   if (!val) return;
 
-  if (!state.conditions.includes(val)) {
-    state.conditions.push(val);
-    renderChips('cond-list', state.conditions);
+  const alreadyExists = state.conditions.some(c => (typeof c === 'string' ? c : c.name).toLowerCase() === val.toLowerCase());
+  if (alreadyExists) {
+    if (inp) inp.value = '';
+    return;
   }
-  inp.value = '';
+
+  const item = { id: null, name: val, is_major: true };
+  state.conditions.push(item);
+  renderChips('cond-list', state.conditions);
+  if (inp) inp.value = '';
 
   const addBtn = document.getElementById('add-cond-btn');
   if (addBtn) addBtn.textContent = 'Saving...';
 
   try {
-    await apiRequest('/api/patient/conditions', {
+    const res = await apiRequest('/api/patient/conditions', {
       method: 'POST',
       body: JSON.stringify({ name: val, is_major: true })
     });
+    if (item._cancelled) {
+      if (res && res.id) {
+        apiRequest('/api/patient/conditions/' + res.id, { method: 'DELETE' }).catch(() => {});
+      }
+      return;
+    }
+    if (res && res.id) {
+      item.id = res.id;
+    }
     state.savedConditions.add(val);
+    if (!state.records) state.records = {};
+    if (!Array.isArray(state.records.conditions)) state.records.conditions = [];
+    state.records.conditions.push(res || item);
     toast(`Condition "${val}" saved`);
   } catch (err) {
     toast(err.message || 'Failed to save condition');
@@ -3485,19 +3519,38 @@ async function addObAllergy() {
     reaction = match[2].trim().replace(/\)$/, '');
   }
 
+  const alreadyExists = state.allergies.some(a => (a.name || a.allergen || '').toLowerCase() === name.toLowerCase());
+  if (alreadyExists) {
+    if (inp) inp.value = '';
+    return;
+  }
+
+  const item = { id: null, name, reaction };
+  state.allergies.push(item);
+  renderChips('ob-allergy-list', state.allergies);
+  if (inp) inp.value = '';
+
   const addBtn = document.getElementById('ob-add-allergy-btn');
   if (addBtn) addBtn.textContent = 'Saving...';
-  inp.value = '';
 
   try {
     const res = await apiRequest('/api/patient/allergies', {
       method: 'POST',
       body: JSON.stringify({ name, reaction })
     });
-    const item = res || { name, reaction };
-    state.allergies.push(item);
+    if (item._cancelled) {
+      if (res && res.id) {
+        apiRequest('/api/patient/allergies/' + res.id, { method: 'DELETE' }).catch(() => {});
+      }
+      return;
+    }
+    if (res && res.id) {
+      item.id = res.id;
+    }
     state.savedAllergies.add(name);
-    renderChips('ob-allergy-list', state.allergies.map(a => `${a.name || a.allergen || 'Allergy'}${a.reaction ? ' (' + a.reaction + ')' : ''}`));
+    if (!state.records) state.records = {};
+    if (!Array.isArray(state.records.allergies)) state.records.allergies = [];
+    state.records.allergies.push(res || item);
     toast(`Allergy "${name}" saved`);
   } catch (err) {
     toast(err.message || 'Failed to save allergy');
@@ -3519,19 +3572,38 @@ async function addObMedication() {
     dosage = match[2].trim();
   }
 
+  const alreadyExists = state.medications.some(m => (m.name || '').toLowerCase() === name.toLowerCase());
+  if (alreadyExists) {
+    if (inp) inp.value = '';
+    return;
+  }
+
+  const item = { id: null, name, dosage, active: true };
+  state.medications.push(item);
+  renderChips('ob-med-list', state.medications);
+  if (inp) inp.value = '';
+
   const addBtn = document.getElementById('ob-add-med-btn');
   if (addBtn) addBtn.textContent = 'Saving...';
-  inp.value = '';
 
   try {
     const res = await apiRequest('/api/patient/medications', {
       method: 'POST',
       body: JSON.stringify({ name, dosage, active: true })
     });
-    const item = res || { name, dosage, active: true };
-    state.medications.push(item);
+    if (item._cancelled) {
+      if (res && res.id) {
+        apiRequest('/api/patient/medications/' + res.id, { method: 'DELETE' }).catch(() => {});
+      }
+      return;
+    }
+    if (res && res.id) {
+      item.id = res.id;
+    }
     state.savedMedications.add(name);
-    renderChips('ob-med-list', state.medications.map(m => `${m.name || 'Medication'}${m.dosage ? ' - ' + m.dosage : ''}`));
+    if (!state.records) state.records = {};
+    if (!Array.isArray(state.records.medications)) state.records.medications = [];
+    state.records.medications.push(res || item);
     toast(`Medication "${name}" saved`);
   } catch (err) {
     toast(err.message || 'Failed to save medication');
@@ -3543,12 +3615,7 @@ async function addObMedication() {
 async function saveP2(){
   const inp = document.getElementById('cond-input');
   if (inp && inp.value.trim() && !inp.disabled) {
-    const val = inp.value.trim();
-    if (!state.conditions.includes(val)) {
-      state.conditions.push(val);
-    }
-    inp.value = '';
-    renderChips('cond-list', state.conditions);
+    await addCondition();
   }
 
   const aInp = document.getElementById('ob-allergy-input');
@@ -3570,12 +3637,15 @@ async function saveP2(){
 
   try {
     for (const c of state.conditions) {
-      if (!state.savedConditions.has(c)) {
-        await apiRequest('/api/patient/conditions', {
+      const cName = typeof c === 'string' ? c : c.name;
+      const cId = typeof c === 'object' ? c.id : null;
+      if (!state.savedConditions.has(cName) && !cId) {
+        const res = await apiRequest('/api/patient/conditions', {
           method: 'POST',
-          body: JSON.stringify({ name: c, is_major: true })
+          body: JSON.stringify({ name: cName, is_major: true })
         });
-        state.savedConditions.add(c);
+        if (res && res.id && typeof c === 'object') c.id = res.id;
+        state.savedConditions.add(cName);
       }
     }
     toast('Medical details saved');
@@ -3595,12 +3665,6 @@ async function addProcedure(){
   const val = inp ? inp.value.trim() : '';
   if (!val) return;
 
-  if (!state.procedures.includes(val)) {
-    state.procedures.push(val);
-    renderChips('proc-list', state.procedures);
-  }
-  inp.value = '';
-
   let procName = val;
   let performedOn = null;
   const match = val.match(/^(.*?)[-\s,]+(\d{4}(?:-\d{2}-\d{2})?)$/);
@@ -3609,11 +3673,25 @@ async function addProcedure(){
     performedOn = match[2].trim();
   }
 
+  const alreadyExists = state.procedures.some(p => {
+    const pName = typeof p === 'string' ? p : (p.name || p.raw || '');
+    return pName.toLowerCase() === procName.toLowerCase() || (typeof p === 'string' && p.toLowerCase() === val.toLowerCase());
+  });
+  if (alreadyExists) {
+    if (inp) inp.value = '';
+    return;
+  }
+
+  const item = { id: null, name: procName, performed_on: performedOn, raw: val, is_major: true };
+  state.procedures.push(item);
+  renderChips('proc-list', state.procedures);
+  if (inp) inp.value = '';
+
   const addBtn = document.getElementById('add-proc-btn');
   if (addBtn) addBtn.textContent = 'Saving...';
 
   try {
-    await apiRequest('/api/patient/procedures', {
+    const res = await apiRequest('/api/patient/procedures', {
       method: 'POST',
       body: JSON.stringify({
         name: procName,
@@ -3621,7 +3699,20 @@ async function addProcedure(){
         is_major: true
       })
     });
+    if (item._cancelled) {
+      if (res && res.id) {
+        apiRequest('/api/patient/procedures/' + res.id, { method: 'DELETE' }).catch(() => {});
+      }
+      return;
+    }
+    if (res && res.id) {
+      item.id = res.id;
+    }
+    state.savedProcedures.add(procName);
     state.savedProcedures.add(val);
+    if (!state.records) state.records = {};
+    if (!Array.isArray(state.records.procedures)) state.records.procedures = [];
+    state.records.procedures.push(res || item);
     toast(`Procedure "${procName}" saved`);
   } catch (err) {
     toast(err.message || 'Failed to save procedure');
@@ -3634,11 +3725,13 @@ async function saveP3(){
   const inp = document.getElementById('proc-input');
   if (inp && inp.value.trim()) {
     const val = inp.value.trim();
-    if (!state.procedures.includes(val)) {
-      state.procedures.push(val);
+    const alreadyExists = state.procedures.some(p => {
+      const pName = typeof p === 'string' ? p : (p.name || p.raw || '');
+      return pName.toLowerCase() === val.toLowerCase();
+    });
+    if (!alreadyExists) {
+      await addProcedure();
     }
-    inp.value = '';
-    renderChips('proc-list', state.procedures);
   }
 
   const btn = document.getElementById('ob3-btn');
@@ -3650,15 +3743,19 @@ async function saveP3(){
 
   try {
     for (const p of state.procedures) {
-      if (!state.savedProcedures.has(p)) {
-        let procName = p;
-        let performedOn = null;
-        const match = p.match(/^(.*?)[-\s,]+(\d{4}(?:-\d{2}-\d{2})?)$/);
-        if (match) {
-          procName = match[1].trim();
-          performedOn = match[2].trim();
+      const pName = typeof p === 'string' ? p : (p.name || p.raw);
+      const pId = typeof p === 'object' ? p.id : null;
+      if (!state.savedProcedures.has(pName) && !pId) {
+        let procName = pName;
+        let performedOn = typeof p === 'object' ? p.performed_on : null;
+        if (!performedOn) {
+          const match = pName.match(/^(.*?)[-\s,]+(\d{4}(?:-\d{2}-\d{2})?)$/);
+          if (match) {
+            procName = match[1].trim();
+            performedOn = match[2].trim();
+          }
         }
-        await apiRequest('/api/patient/procedures', {
+        const res = await apiRequest('/api/patient/procedures', {
           method: 'POST',
           body: JSON.stringify({
             name: procName,
@@ -3666,7 +3763,8 @@ async function saveP3(){
             is_major: true
           })
         });
-        state.savedProcedures.add(p);
+        if (res && res.id && typeof p === 'object') p.id = res.id;
+        state.savedProcedures.add(pName);
       }
     }
     toast('Previous procedures saved');
@@ -3722,17 +3820,156 @@ function addChip(inputId,listId,arr){
   arr.push(inp.value.trim()); inp.value='';
   renderChips(listId,arr);
 }
-function renderChips(listId,arr){
-  document.getElementById(listId).innerHTML = arr.map((c,i)=>`<span class="chip">${c}<button onclick="arr_remove('${listId}',${i})">&times;</button></span>`).join('');
-  const empty=document.getElementById('proc-empty'); if(empty) empty.style.display = state.procedures.length?'none':'block';
+
+function getChipDisplay(item, listId) {
+  if (!item) return '';
+  if (typeof item === 'string') return item;
+  if (listId === 'ob-allergy-list') {
+    return `${item.name || item.allergen || 'Allergy'}${item.reaction ? ' (' + item.reaction + ')' : ''}`;
+  }
+  if (listId === 'ob-med-list') {
+    return `${item.name || 'Medication'}${item.dosage ? ' - ' + item.dosage : ''}${item.frequency ? ' (' + item.frequency + ')' : ''}`;
+  }
+  if (listId === 'proc-list') {
+    return item.raw || `${item.name || 'Procedure'}${item.performed_on ? ' - ' + item.performed_on : ''}`;
+  }
+  if (listId === 'cond-list') {
+    return item.name || String(item);
+  }
+  return item.name || item.label || item.raw || String(item);
 }
-function arr_remove(listId,i){
-  const arr = listId==='cond-list'?state.conditions:state.procedures;
-  arr.splice(i,1); renderChips(listId,arr);
+
+function renderChips(listId, arr){
+  const el = document.getElementById(listId);
+  if (!el) return;
+  let items = arr;
+  if (!items) {
+    if (listId === 'cond-list') items = state.conditions;
+    else if (listId === 'ob-allergy-list') items = state.allergies;
+    else if (listId === 'ob-med-list') items = state.medications;
+    else if (listId === 'proc-list') items = state.procedures;
+    else items = [];
+  }
+  el.innerHTML = items.map((c, i) => {
+    const text = typeof c === 'string' ? c : getChipDisplay(c, listId);
+    return `<span class="chip">${text}<button type="button" onclick="arr_remove('${listId}', ${i})" aria-label="Remove ${text}">&times;</button></span>`;
+  }).join('');
+
+  if (listId === 'proc-list') {
+    const empty = document.getElementById('proc-empty');
+    if (empty) empty.style.display = state.procedures.length ? 'none' : 'block';
+  }
 }
-function toggleNone(cb,inputId,arr,listId){
-  document.getElementById(inputId).disabled=cb.checked;
-  if(cb.checked){ arr.length=0; renderChips(listId,arr); }
+
+async function arr_remove(listId, i){
+  let targetArr = null;
+  let itemType = '';
+  let deleteEndpoint = '';
+  let savedSet = null;
+
+  if (listId === 'cond-list') {
+    targetArr = state.conditions;
+    itemType = 'condition';
+    deleteEndpoint = '/api/patient/conditions/';
+    savedSet = state.savedConditions;
+  } else if (listId === 'ob-allergy-list') {
+    targetArr = state.allergies;
+    itemType = 'allergy';
+    deleteEndpoint = '/api/patient/allergies/';
+    savedSet = state.savedAllergies;
+  } else if (listId === 'ob-med-list') {
+    targetArr = state.medications;
+    itemType = 'medication';
+    deleteEndpoint = '/api/patient/medications/';
+    savedSet = state.savedMedications;
+  } else if (listId === 'proc-list') {
+    targetArr = state.procedures;
+    itemType = 'procedure';
+    deleteEndpoint = '/api/patient/procedures/';
+    savedSet = state.savedProcedures;
+  } else {
+    return;
+  }
+
+  if (!targetArr || i < 0 || i >= targetArr.length) return;
+
+  const item = targetArr[i];
+  if (!item) return;
+
+  if (typeof item === 'object') {
+    item._cancelled = true;
+  }
+
+  targetArr.splice(i, 1);
+
+  if (savedSet) {
+    if (typeof item === 'string') {
+      savedSet.delete(item);
+    } else if (typeof item === 'object') {
+      if (item.name) savedSet.delete(item.name);
+      if (item.allergen) savedSet.delete(item.allergen);
+      if (item.label) savedSet.delete(item.label);
+      if (item.raw) savedSet.delete(item.raw);
+    }
+  }
+
+  if (state.records) {
+    const filterFn = (r) => {
+      if (!r) return false;
+      if (typeof item === 'object' && item.id && r.id) return r.id !== item.id;
+      const rName = (r.name || r.allergen || '').toLowerCase();
+      const itName = (typeof item === 'string' ? item : (item.name || item.allergen || item.raw || '')).toLowerCase();
+      return rName !== itName;
+    };
+    if (listId === 'cond-list' && Array.isArray(state.records.conditions)) {
+      state.records.conditions = state.records.conditions.filter(filterFn);
+    } else if (listId === 'ob-allergy-list' && Array.isArray(state.records.allergies)) {
+      state.records.allergies = state.records.allergies.filter(filterFn);
+    } else if (listId === 'ob-med-list' && Array.isArray(state.records.medications)) {
+      state.records.medications = state.records.medications.filter(filterFn);
+    } else if (listId === 'proc-list' && Array.isArray(state.records.procedures)) {
+      state.records.procedures = state.records.procedures.filter(filterFn);
+    }
+    if (typeof renderRecordsUI === 'function') {
+      renderRecordsUI(state.records);
+    }
+  }
+
+  renderChips(listId, targetArr);
+
+  let itemId = (typeof item === 'object' && item.id) ? item.id : null;
+  if (!itemId && state.records) {
+    let recList = null;
+    if (listId === 'cond-list') recList = state.records.conditions;
+    else if (listId === 'ob-allergy-list') recList = state.records.allergies;
+    else if (listId === 'ob-med-list') recList = state.records.medications;
+    else if (listId === 'proc-list') recList = state.records.procedures;
+    if (Array.isArray(recList)) {
+      const itName = (typeof item === 'string' ? item : (item.name || item.allergen || item.raw || '')).toLowerCase();
+      const found = recList.find(r => r && (r.name || r.allergen || '').toLowerCase() === itName);
+      if (found && found.id) {
+        itemId = found.id;
+      }
+    }
+  }
+
+  if (itemId && deleteEndpoint) {
+    try {
+      await apiRequest(deleteEndpoint + itemId, { method: 'DELETE' });
+    } catch (err) {
+      console.error(`Failed to delete ${itemType} ID ${itemId}:`, err);
+    }
+  }
+}
+
+function toggleNone(cb, inputId, arr, listId){
+  const inp = document.getElementById(inputId);
+  if (inp) inp.disabled = cb.checked;
+  if (cb.checked) {
+    while (arr && arr.length > 0) {
+      arr_remove(listId, arr.length - 1);
+    }
+  }
 }
 
 function renderDynamic(id){
@@ -3755,6 +3992,14 @@ function renderDynamic(id){
     const pContact = document.getElementById('p-contact');
     if(pContact && !pContact.value && state.profile.contact){ pContact.value = state.profile.contact; }
   }
+  if(id==='v-ob2'){
+    renderChips('cond-list', state.conditions);
+    renderChips('ob-allergy-list', state.allergies);
+    renderChips('ob-med-list', state.medications);
+  }
+  if(id==='v-ob3'){
+    renderChips('proc-list', state.procedures);
+  }
   if(id==='v-review'){
     const allergiesText = (state.allergies && state.allergies.length)
       ? state.allergies.map(a => `${a.name || a.allergen || 'Allergy'}${a.reaction ? ' (' + a.reaction + ')' : ''}`).join(', ')
@@ -3762,18 +4007,24 @@ function renderDynamic(id){
     const medsText = (state.medications && state.medications.length)
       ? state.medications.map(m => `${m.name || 'Medication'}${m.dosage ? ' - ' + m.dosage : ''}${m.frequency ? ' (' + m.frequency + ')' : ''}`).join(', ')
       : 'None reported';
+    const condText = (state.conditions && state.conditions.length)
+      ? state.conditions.map(c => typeof c === 'string' ? c : (c.name || '')).filter(Boolean).join(', ')
+      : 'None reported';
+    const procText = (state.procedures && state.procedures.length)
+      ? state.procedures.map(p => typeof p === 'string' ? p : (p.raw || `${p.name || ''}${p.performed_on ? ' - ' + p.performed_on : ''}`)).filter(Boolean).join(', ')
+      : 'None added';
 
     document.getElementById('review-body').innerHTML = `
       <p class="section-title" style="margin-top:0">Personal Information</p>
       <p style="font-size:.88rem">Name: ${state.profile.name||'—'}<br>DOB: ${state.profile.dob||'—'}<br>Blood group: ${state.profile.blood||'—'}</p>
       <p class="section-title">Medical Conditions</p>
-      <p style="font-size:.88rem">${state.conditions.join(', ')||'None reported'}</p>
+      <p style="font-size:.88rem">${condText}</p>
       <p class="section-title">Allergies</p>
       <p style="font-size:.88rem">${allergiesText}</p>
       <p class="section-title">Current Medications</p>
       <p style="font-size:.88rem">${medsText}</p>
       <p class="section-title">Previous Procedures</p>
-      <p style="font-size:.88rem">${state.procedures.join(', ')||'None added'}</p>
+      <p style="font-size:.88rem">${procText}</p>
       <p class="section-title">Emergency Contact</p>
       <p style="font-size:.88rem">${state.profile.contact||'—'}</p>`;
   }
