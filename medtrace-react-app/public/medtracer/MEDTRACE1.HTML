@@ -14,34 +14,60 @@
 </script>
 <style>
 :root{
-  --navy:#0c2340; --navy2:#0d2847; --blue:#1976d2; --blue-l:#e3f2fd;
-  --gray:#64748b; --border:#e2e8f0; --bg:#f5f7fa; --card:#ffffff;
-  --danger:#d32f2f; --success:#2e7d32; --radius:16px;
+  --navy:#0c2340; --navy2:#0f2744; --blue:#1976d2; --blue-l:#f0f7ff;
+  --gray:#64748b; --border:#e2e8f0; --bg:#f8fafc; --card:#ffffff;
+  --danger:#dc2626; --success:#16a34a; --radius:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--navy);}
-button{font-family:inherit;cursor:pointer;border:none;}
-input,select{font-family:inherit;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--navy);-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;border:none;}
+input,select,textarea{font-family:inherit;}
 a{color:inherit;text-decoration:none;}
+
+/* ---- Cursor & Interaction Rules ---- */
+button, .btn, .link, .tile, .qcard, a, select, [onclick], input[type=checkbox], input[type=radio], label[for] {
+  cursor: pointer;
+}
+input[type=date]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+input[type=text], input[type=email], input[type=password], input[type=date], textarea {
+  cursor: text;
+}
+button:disabled, .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+body, .card, p, h1, h2, h3, h4, span, label:not([for]), .section-title, .sub, .qr-box {
+  cursor: default;
+}
+button, .btn, .tile, .qcard, .badge, .chip, #sidebar .navlist a, #bottomnav a {
+  user-select: none;
+  -webkit-user-select: none;
+}
 
 /* ---- Shell ---- */
 #shell{display:flex;min-height:100vh;}
 #sidebar{width:230px;background:var(--navy);color:#fff;padding:22px 14px;display:flex;flex-direction:column;flex-shrink:0;}
-#sidebar h1{font-size:1.3rem;margin-bottom:26px;padding-left:8px;}
-#sidebar .navlist a{display:flex;gap:10px;align-items:center;padding:11px 10px;border-radius:10px;color:#b9c6da;font-size:.92rem;font-weight:600;margin-bottom:4px;}
+#sidebar h1{font-size:1.25rem;font-weight:700;margin-bottom:24px;padding-left:8px;letter-spacing:-0.02em;}
+#sidebar .navlist a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:8px;color:#cbd5e1;font-size:.9rem;font-weight:500;margin-bottom:4px;transition:background-color .15s ease, color .15s ease;}
 #sidebar .navlist a.active,#sidebar .navlist a:hover{background:var(--blue);color:#fff;}
-#sidebar .role-switch{margin-top:auto;font-size:.72rem;color:#8fa2bd;padding:8px;}
-#sidebar .role-switch button{background:none;color:#21189a;font: size 0.75em;}
+#sidebar .navlist a span{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0;}
+#sidebar .navlist a svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;}
+#sidebar .role-switch{margin-top:auto;font-size:.75rem;color:#94a3b8;padding:8px;}
+#sidebar .role-switch button{background:#fff;color:var(--navy);border-radius:6px;padding:7px 10px;font-size:.78rem;font-weight:600;width:100%;border:1px solid rgba(255,255,255,0.15);transition:background-color .15s ease;}
+#sidebar .role-switch button:hover{background:#f8fafc;}
 #main{flex:1;min-width:0;display:flex;flex-direction:column;}
-#topbar{display:none;align-items:center;gap:10px;padding:14px 18px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;}
-#topbar button{background:none;font-size:1.2rem;color:var(--navy);}
-#topbar h2{font-size:1rem;}
-#content{flex:1;padding:30px;display:flex;justify-content:center;}
+#topbar{display:none;align-items:center;gap:10px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;}
+#topbar button#backBtn{background:none;font-size:1.15rem;color:var(--navy);padding:4px 8px;border-radius:6px;transition:background-color .15s ease;}
+#topbar button#backBtn:hover{background:#f1f5f9;}
+#topbar h2{font-size:1rem;font-weight:700;letter-spacing:-0.01em;}
+#content{flex:1;padding:24px;display:flex;justify-content:center;}
 .wrap{width:100%;max-width:460px;}
 #bottomnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px));justify-content:space-around;z-index:9;}
-#bottomnav a{display:flex;flex-direction:column;align-items:center;font-size:.6rem;color:var(--gray);font-weight:600;gap:2px;flex:1;}
-#bottomnav a.active{color:var(--blue);}
-#bottomnav svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;}
+#bottomnav a{display:flex;flex-direction:column;align-items:center;font-size:.62rem;color:var(--gray);font-weight:500;gap:3px;flex:1;padding:3px 0;transition:color .15s ease;}
+#bottomnav a.active{color:var(--blue);font-weight:600;}
+#bottomnav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;}
 
 @media (max-width:860px){
   #sidebar{display:none;}
@@ -52,84 +78,98 @@ a{color:inherit;text-decoration:none;}
 
 /* ---- Generic view elements ---- */
 .view{display:none;}
-.view.active{display:block;animation:fade .18s ease;}
-@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
-.card{background:var(--card);border-radius:var(--radius);padding:22px;border:1px solid var(--border);}
+.view.active{display:block;animation:fade .15s ease-out;}
+@keyframes fade{from{opacity:0;}to{opacity:1;}}
+.card{background:var(--card);border-radius:var(--radius);padding:22px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.03);}
 .center{text-align:center;}
-h2.title{font-size:1.4rem;font-weight:800;margin-bottom:6px;}
-p.sub{color:var(--gray);font-size:.88rem;margin-bottom:18px;line-height:1.4;}
-.step{color:var(--blue);font-weight:700;font-size:.75rem;margin-bottom:6px;}
-label{display:block;font-size:.78rem;font-weight:700;color:var(--navy);margin:14px 0 5px;}
+h2.title{font-size:1.35rem;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em;color:var(--navy);}
+p.sub{color:var(--gray);font-size:.875rem;margin-bottom:18px;line-height:1.5;}
+.step{color:var(--blue);font-weight:700;font-size:.75rem;margin-bottom:6px;letter-spacing:0.03em;}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--navy);margin:14px 0 5px;}
 input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{
-  width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-size:.9rem;background:#fbfcfe;}
+  width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;background:#fbfcfe;transition:border-color .15s ease, box-shadow .15s ease;
+}
 input::placeholder,textarea::placeholder{color:#94a3b8;opacity:1;font-family:inherit;}
-input:focus,select:focus{outline:2px solid var(--blue);}
-.btn{display:block;width:100%;padding:13px;border-radius:14px;font-weight:700;font-size:.88rem;text-align:center;}
-.btn-primary{background:var(--blue);color:#fff;}
-.btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue)!important;}
-.btn-danger{background:var(--danger);color:#fff;}
-.btn-ghost{background:none;color:var(--blue);font-weight:700;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(25, 118, 210, 0.12);}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:11px 16px;border-radius:8px;font-weight:600;font-size:.88rem;text-align:center;
+  transition:background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04);
+}
+.btn-primary{background:var(--blue);color:#fff;border:1px solid var(--blue);}
+.btn-primary:hover:not(:disabled){background:#1565c0;border-color:#1565c0;}
+.btn-primary:active:not(:disabled){background:#0d47a1;}
+.btn-outline{background:#fff;color:var(--blue);border:1px solid var(--border)!important;}
+.btn-outline:hover:not(:disabled){background:#f8fafc;border-color:#cbd5e1!important;color:#1565c0;}
+.btn-outline:active:not(:disabled){background:#f1f5f9;}
+.btn-danger{background:var(--danger);color:#fff;border:1px solid var(--danger);}
+.btn-danger:hover:not(:disabled){background:#b91c1c;border-color:#b91c1c;}
+.btn-ghost{background:none;color:var(--blue);font-weight:600;box-shadow:none;}
+.btn-ghost:hover{text-decoration:underline;}
 .row{display:flex;gap:10px;}
 .row .btn{flex:1;}
-.link{color:var(--blue);font-weight:700;}
+.link{color:var(--blue);font-weight:600;}
+.link:hover{text-decoration:underline;color:#1565c0;}
 .foot-link{text-align:center;margin-top:16px;font-size:.82rem;color:var(--gray);}
-.chip{display:inline-flex;align-items:center;gap:6px;background:var(--blue-l);color:var(--blue);padding:6px 12px;border-radius:20px;font-size:.8rem;font-weight:600;margin:0 6px 6px 0;}
-.chip button{background:none;color:var(--blue);font-weight:800;}
-.list-item{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--blue-l);color:var(--blue);padding:4px 10px;border-radius:6px;font-size:.78rem;font-weight:600;margin:0 6px 6px 0;border:1px solid transparent;}
+.chip button{background:none;color:var(--blue);font-weight:700;font-size:1rem;line-height:1;padding:0 2px;}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:0.88rem;}
 .list-item:last-child{border-bottom:none;}
-.section-title{font-size:.8rem;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.03em;margin:20px 0 8px;}
+.section-title{font-size:.76rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 8px;}
 .section-title:first-child{margin-top:0;}
 .otp-row{display:flex;gap:10px;justify-content:center;margin:18px 0;}
-.otp-row input{width:46px;height:52px;text-align:center;font-size:1.2rem;font-weight:700;}
-.checkline{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--navy);margin:12px 0;}
+.otp-row input{width:44px;height:48px;text-align:center;font-size:1.2rem;font-weight:700;border-radius:8px;}
+.checkline{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--navy);margin:10px 0;}
 .checkline input{width:auto;}
-.qr-box{width:180px;height:180px;background:#fff;border:2px solid var(--navy);border-radius:14px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);letter-spacing:1px;background-image:
-  repeating-linear-gradient(90deg,#0c2340 0 6px,transparent 6px 12px),
-  repeating-linear-gradient(#0c2340 0 6px,transparent 6px 12px);
-  background-size:24px 24px;background-blend-mode:multiply;background-color:#fff;}
-.qr-box span{background:#fff;padding:6px 10px;border-radius:6px;font-size:.75rem;}
-.banner{background:var(--navy2);color:#fff;border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:20px;}
+.qr-box{width:170px;height:170px;background:#fff;border:1.5px solid var(--navy);border-radius:10px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);letter-spacing:1px;}
+.qr-box span{background:#fff;padding:4px 8px;border-radius:4px;font-size:.72rem;}
+.banner{background:var(--navy2);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;margin-bottom:18px;border:1px solid rgba(255,255,255,0.08);}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
-.tile{background:var(--navy2);color:#fff;border-radius:12px;padding:14px 6px;text-align:center;font-size:.72rem;font-weight:700;cursor:pointer;}
-.qcard{display:flex;align-items:center;gap:8px;background:var(--navy2);color:#fff;border-radius:12px;padding:12px;flex:1;font-size:.72rem;font-weight:700;cursor:pointer;}
+.tile{background:#fff;color:var(--navy);border:1px solid var(--border);border-radius:8px;padding:12px 6px;text-align:center;font-size:.75rem;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,0.03);transition:background-color .15s ease, border-color .15s ease;}
+.tile:hover{background:#f8fafc;border-color:#cbd5e1;}
+.qcard{display:flex;align-items:center;gap:8px;background:#fff;color:var(--navy);border:1px solid var(--border);border-radius:8px;padding:11px 12px;flex:1;font-size:.75rem;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.03);transition:background-color .15s ease, border-color .15s ease;}
+.qcard:hover{background:#f8fafc;border-color:#cbd5e1;}
 .qgrid{display:flex;gap:10px;margin-bottom:16px;}
-.badge{font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:20px;}
-.badge.ok{background:#e8f5e9;color:var(--success);}
-.badge.warn{background:#fff3e0;color:#e65100;}
-.avatar{width:40px;height:40px;border-radius:50%;background:var(--blue-l);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:30px;font-size:.85rem;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s, bottom .25s;z-index:99;}
-.toast.show{opacity:1;bottom:100px;}
-@media (max-width:860px){.toast.show{bottom:96px;}}
+.badge{font-size:.68rem;font-weight:600;padding:3px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;}
+.badge.ok{background:#ecfdf5;color:var(--success);border:1px solid #d1fae5;}
+.badge.warn{background:#fffbeb;color:#b45309;border:1px solid #fef3c7;}
+.avatar{width:38px;height:38px;border-radius:8px;background:var(--blue-l);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:.85rem;}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 16px;border-radius:8px;font-size:.84rem;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;z-index:99;}
+.toast.show{opacity:1;transform:translate(-50%, -6px);}
+@media (max-width:860px){.toast.show{bottom:90px;}}
 .hidden{display:none!important;}
-.warn-banner{background:#fff3e0;color:#e65100;border-radius:12px;padding:12px 14px;font-size:.82rem;font-weight:600;margin-bottom:16px;display:flex;gap:8px;align-items:center;}
+.warn-banner{background:#fffbeb;color:#92400e;border:1px solid #fef3c7;border-radius:8px;padding:10px 12px;font-size:.82rem;font-weight:500;margin-bottom:14px;display:flex;gap:8px;align-items:center;}
+.icon-hero{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;}
+
 @media (min-width:861px){
   #shell{height:100vh;min-height:100vh;overflow:hidden;}
   #sidebar{height:100vh;min-height:100vh;position:sticky;top:0;}
   #main{height:100vh;min-height:0;}
-  #content{min-height:0;padding:32px clamp(32px,4vw,64px);align-items:stretch;overflow-y:auto;}
-  .wrap{width:100%;max-width:1600px;min-height:100%;}
-  .view.active{width:100%;min-height:calc(100vh - 64px);}
-  .view[data-nav="none"]{max-width:1180px;margin-inline:auto;}
-  .view.active > .card{min-height:calc(100vh - 64px);}
+  #content{min-height:0;padding:28px 40px;align-items:stretch;overflow-y:auto;}
+  .wrap{width:100%;max-width:1400px;min-height:100%;}
+  .view.active{width:100%;min-height:calc(100vh - 56px);}
+  .view[data-nav="none"]{max-width:1040px;margin-inline:auto;}
+  .view.active > .card{min-height:calc(100vh - 56px);}
   .card{padding:28px;}
-  h2.title{font-size:clamp(1.65rem,1.45rem + .4vw,2rem);line-height:1.3;}
-  p.sub{font-size:clamp(1.02rem,.98rem + .14vw,1.14rem);line-height:1.65;}
-  p[style*="font-size:.88rem"]{font-size:1rem!important;line-height:1.65!important;}
-  label{font-size:.95rem;}
-  input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{min-height:50px;padding:14px 16px;font-size:1rem;line-height:1.5;}
-  .btn{min-height:50px;padding:14px 16px;font-size:1rem;line-height:1.45;}
-  .section-title{font-size:.92rem;letter-spacing:.04em;}
-  .step{font-size:.84rem;}
-  .foot-link{font-size:.92rem;}
-  .chip{padding:7px 14px;font-size:.92rem;}
-  .list-item{font-size:1rem;line-height:1.6;}
-  .tile,.qcard{font-size:.9rem;line-height:1.5;}
-  .badge{font-size:.76rem;}
-  .checkline{font-size:.95rem;line-height:1.5;}
-  .warn-banner{font-size:.92rem;line-height:1.5;}
-  .qr-box span{font-size:.85rem;}
-  #sidebar .navlist a{font-size:1rem;}
-  #sidebar .role-switch,#sidebar .role-switch button{font-size:.8rem;}
+  h2.title{font-size:1.6rem;line-height:1.35;}
+  p.sub{font-size:0.95rem;line-height:1.6;}
+  p[style*="font-size:.88rem"]{font-size:.95rem!important;line-height:1.6!important;}
+  label{font-size:.9rem;}
+  input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{min-height:44px;padding:11px 14px;font-size:.95rem;line-height:1.5;}
+  .btn{min-height:44px;padding:11px 16px;font-size:.95rem;line-height:1.4;}
+  .section-title{font-size:.82rem;letter-spacing:.05em;}
+  .step{font-size:.8rem;}
+  .foot-link{font-size:.88rem;}
+  .chip{padding:6px 12px;font-size:.85rem;}
+  .list-item{font-size:.95rem;line-height:1.55;}
+  .tile,.qcard{font-size:.85rem;line-height:1.45;}
+  .badge{font-size:.74rem;}
+  .checkline{font-size:.9rem;line-height:1.5;}
+  .warn-banner{font-size:.88rem;line-height:1.5;}
+  .qr-box span{font-size:.82rem;}
+  #sidebar .navlist a{font-size:.92rem;}
+  #sidebar .role-switch,#sidebar .role-switch button{font-size:.78rem;}
 }
 
 /* ---- Group 13: Live QR Scanner ---- */
@@ -139,13 +179,13 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   max-width: 340px;
   min-height: 280px;
   margin: 0 auto 14px;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   background: #090d16;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 #qr-reader {
   width: 100% !important;
@@ -177,23 +217,23 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   height: 210px;
   position: relative;
   box-shadow: 0 0 0 9999px rgba(0,0,0,0.42);
-  border-radius: 14px;
+  border-radius: 10px;
 }
 .scanner-corner {
   position: absolute;
   width: 24px;
   height: 24px;
-  border-color: #38bdf8;
+  border-color: var(--blue);
   border-style: solid;
 }
-.scanner-corner.tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 8px; }
-.scanner-corner.tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 8px; }
-.scanner-corner.bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 8px; }
-.scanner-corner.br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 8px; }
+.scanner-corner.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-top-left-radius: 6px; }
+.scanner-corner.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 6px; }
+.scanner-corner.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 6px; }
+.scanner-corner.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 6px; }
 
 @keyframes laserScanAnimation {
   0% { top: 8px; opacity: 0.3; }
-  50% { top: 196px; opacity: 1; }
+  50% { top: 196px; opacity: 0.9; }
   100% { top: 8px; opacity: 0.3; }
 }
 .scanner-laser {
@@ -201,10 +241,10 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   left: 6px;
   right: 6px;
   height: 2px;
-  background: #38bdf8;
-  box-shadow: 0 0 10px #38bdf8, 0 0 16px #0284c7;
-  border-radius: 2px;
-  animation: laserScanAnimation 2.2s infinite ease-in-out;
+  background: var(--blue);
+  border-radius: 1px;
+  opacity: 0.8;
+  animation: laserScanAnimation 2.4s infinite ease-in-out;
 }
 
 /* Emergency Scanner Reticle & Laser (Red Theme) */
@@ -226,11 +266,10 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   display: none !important;
 }
 .scanner-corner.emerg {
-  border-color: #f43f5e;
+  border-color: #e11d48;
 }
 .scanner-laser.emerg {
-  background: #f43f5e;
-  box-shadow: 0 0 10px #f43f5e, 0 0 16px #be123c;
+  background: #e11d48;
 }
 </style>
 </head>
@@ -253,9 +292,9 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
   <div id="main">
     <div id="topbar">
-      <button id="backBtn" onclick="goBack()">&#8592;</button>
+      <button id="backBtn" onclick="goBack()" aria-label="Go back" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
       <h2 id="topTitle">MedTrace</h2>
-      <button id="mobileSwitchRoleBtn" onclick="switchRole()" style="margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff!important;font-size:0.75rem!important;font-weight:700;color:var(--blue)!important;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">⇄ Switch to Provider</button>
+      <button id="mobileSwitchRoleBtn" onclick="switchRole()" style="margin-left:auto;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff!important;font-size:0.75rem!important;font-weight:700;color:var(--blue)!important;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg> Switch to Provider</button>
       <div id="topbar-status-dot" style="margin-left:8px;width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;cursor:pointer;flex-shrink:0;" title="Click to re-check connectivity" onclick="backendHealthChecked=false;checkBackendHealth();"></div>
     </div>
     <div id="content"><div class="wrap" id="viewport"></div></div>
@@ -269,7 +308,9 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <!-- ===================== SHARED / AUTH ===================== -->
 <section class="view" id="v-welcome" data-title="MedTrace" data-nav="none">
   <div class="card center">
-    <div style="font-size:3rem">🩺</div>
+    <div class="icon-hero" style="width:56px;height:56px;border-radius:10px;background:var(--blue-l);color:var(--blue);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+    </div>
     <h2 class="title">Your health information, wherever you go</h2>
     <p class="sub">Securely store and share your essential medical information when you need it.</p>
     <button class="btn btn-primary" onclick="state.role='patient';buildNav();go('v-signup')">Create Patient Account</button>
@@ -387,7 +428,9 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
 <section class="view" id="v-created" data-title="Passport Created" data-nav="none">
   <div class="card center">
-    <div style="font-size:2.6rem">✅</div>
+    <div class="icon-hero" style="width:52px;height:52px;border-radius:10px;background:#ecfdf5;color:#16a34a;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 10"/></svg>
+    </div>
     <h2 class="title">Your MedTrace QR</h2>
     <p class="sub">Show this code to an authorized healthcare provider to request access to your medical information</p>
     <div class="qr-box" id="created-qr-box" style="padding:0;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;">
@@ -396,7 +439,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
     </div>
     <p class="sub" id="created-passport-id" style="font-weight:700;margin-bottom:14px;color:var(--navy);font-size:1.05rem;"></p>
     <button class="btn btn-primary" onclick="go('v-dash')">Go to Dashboard</button>
-    <button class="btn btn-outline" style="margin-top:8px" onclick="if(state.profile && state.profile.qr_token){lookupEmergency(state.profile.qr_token);}else if(localStorage.getItem('medtrace_last_qr_token')){lookupEmergency(localStorage.getItem('medtrace_last_qr_token'));}else{go('v-emerg2');}">🚨 Preview Emergency Screen</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="if(state.profile && state.profile.qr_token){lookupEmergency(state.profile.qr_token);}else if(localStorage.getItem('medtrace_last_qr_token')){lookupEmergency(localStorage.getItem('medtrace_last_qr_token'));}else{go('v-emerg2');}">Preview Emergency Screen</button>
   </div>
 </section>
 
@@ -415,20 +458,35 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   </div>
   <p class="section-title">Medical Profile</p>
   <div class="grid3">
-    <div class="tile" onclick="go('v-profile')">❤️<br><span id="dash-cond-label">Conditions</span></div>
-    <div class="tile" onclick="go('v-profile')">⚠️<br><span id="dash-allergies-label">Allergies</span></div>
-    <div class="tile" onclick="go('v-profile')">💊<br><span id="dash-meds-label">Medications</span></div>
+    <div class="tile" onclick="go('v-profile')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span id="dash-cond-label">Conditions</span>
+    </div>
+    <div class="tile" onclick="go('v-profile')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="dash-allergies-label">Allergies</span>
+    </div>
+    <div class="tile" onclick="go('v-profile')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+      <span id="dash-meds-label">Medications</span>
+    </div>
   </div>
   <p class="section-title">Quick Access</p>
   <div class="qgrid">
-    <div class="qcard" onclick="go('v-emerg2')">🚨 Emergency Profile</div>
-    <div class="qcard" onclick="go('v-history')">🕘 Access History</div>
+    <div class="qcard" onclick="go('v-emerg2')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>Emergency Profile</span>
+    </div>
+    <div class="qcard" onclick="go('v-history')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Access History</span>
+    </div>
   </div>
   <div id="dash-requests-container" style="display:none;margin-top:16px;">
     <p class="section-title" style="color:var(--blue);margin-top:0">Incoming Access Requests</p>
     <div id="dash-requests-list"></div>
   </div>
-  <button class="btn btn-outline" id="dash-check-req-btn" style="margin-top:14px;width:100%" onclick="loadAccessRequests(true)">🔄 Check for Access Requests</button>
+  <button class="btn btn-outline" id="dash-check-req-btn" style="margin-top:14px;width:100%" onclick="loadAccessRequests(true)">Check for Access Requests</button>
 </section>
 
 <section class="view" id="v-profile" data-title="Medical Profile" data-nav="profile">
@@ -521,7 +579,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-history" data-title="Access History" data-nav="history">
   <div style="display:flex;align-items:center;justify-content:space-between">
     <h2 class="title" style="margin:0">Access History</h2>
-    <button class="btn btn-outline" style="width:auto;padding:6px 12px;font-size:0.8rem;margin:0" onclick="loadPatientAccessHistory(true)">↻ Refresh</button>
+    <button class="btn btn-outline" style="width:auto;padding:6px 12px;font-size:0.8rem;margin:0;display:inline-flex;align-items:center;gap:6px;" onclick="loadPatientAccessHistory(true)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg> Refresh</button>
   </div>
   <p class="sub" style="margin-top:4px;margin-bottom:12px">Real-time audit log of healthcare providers who accessed your medical records</p>
   
@@ -541,7 +599,7 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
 <!-- ===================== EMERGENCY (patient-facing read-only) ===================== -->
 <section class="view" id="v-emerg2" data-title="Emergency Profile" data-nav="emergency">
-  <div class="warn-banner">⚠️ Visible without login for emergency responders</div>
+  <div class="warn-banner"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Visible without login for emergency responders</div>
   <h2 class="title">Emergency Medical Information</h2>
   <div class="card" style="margin-top:14px">
     <p class="section-title" style="margin-top:0">Medical Conditions</p><div id="em-cond"></div>
@@ -589,8 +647,8 @@ input:focus,select:focus{outline:2px solid var(--blue);}
   <p class="sub" id="provider-org" style="margin-top:-6px;margin-bottom:14px;color:var(--blue);font-weight:600;"></p>
   
   <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-    <button class="btn btn-primary" id="pdash-scan-btn" style="margin:0;" onclick="go('v-scan')">📷 Scan Patient QR</button>
-    <button class="btn btn-danger" id="pdash-emerg-btn" style="margin:0;background:#e11d48;color:#fff;font-weight:700;" onclick="go('v-emerg-scan')">🚨 Emergency QR Scan (Critical Care)</button>
+    <button class="btn btn-primary" id="pdash-scan-btn" style="margin:0;" onclick="go('v-scan')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scan Patient QR</button>
+    <button class="btn btn-danger" id="pdash-emerg-btn" style="margin:0;background:#e11d48;color:#fff;font-weight:700;" onclick="go('v-emerg-scan')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Emergency QR Scan (Critical Care)</button>
   </div>
 
   <p class="section-title">Recent Patients &amp; Consultation Requests</p>
@@ -625,12 +683,15 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
       <!-- Error / Permission Denied Fallback UI -->
       <div id="scanner-error-box" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(9,13,22,0.96);padding:24px 20px;text-align:center;color:#fff;z-index:10;flex-direction:column;align-items:center;justify-content:center;">
-        <div style="font-size:2.2rem;margin-bottom:8px;">📷⚠️</div>
+        <div class="icon-hero" style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,0.08);color:#fca5a5;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
         <p id="scanner-error-msg" style="font-size:0.84rem;color:#fca5a5;line-height:1.45;margin-bottom:14px;max-width:260px;">Camera access was not granted.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
           <button class="btn btn-primary" id="btn-retry-camera" style="width:auto;padding:8px 16px;font-size:0.8rem;" onclick="startQrScanner()">Retry Camera</button>
-          <label class="btn btn-outline" style="width:auto;padding:8px 16px;font-size:0.8rem;background:transparent;color:#38bdf8;border-color:#38bdf8!important;cursor:pointer;">
-            📁 Upload QR
+          <label class="btn btn-outline" style="width:auto;padding:8px 16px;font-size:0.8rem;background:transparent;color:#38bdf8;border-color:#38bdf8!important;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload QR
             <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="handleQrFileUpload(event)">
           </label>
         </div>
@@ -639,14 +700,14 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
     <!-- Scanner Action Controls -->
     <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button class="btn btn-outline" id="btn-toggle-camera" style="flex:1;padding:10px;font-size:0.82rem;" onclick="toggleQrCamera()">🔄 Switch Camera</button>
-      <button class="btn btn-outline" id="btn-stop-camera" style="flex:1;padding:10px;font-size:0.82rem;" onclick="toggleQrScanningState()">⏸ Pause Camera</button>
+      <button class="btn btn-outline" id="btn-toggle-camera" style="flex:1;padding:10px;font-size:0.82rem;display:inline-flex;align-items:center;justify-content:center;gap:6px;" onclick="toggleQrCamera()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg> Switch Camera</button>
+      <button class="btn btn-outline" id="btn-stop-camera" style="flex:1;padding:10px;font-size:0.82rem;display:inline-flex;align-items:center;justify-content:center;gap:6px;" onclick="toggleQrScanningState()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause Camera</button>
     </div>
 
     <!-- Secondary Fallback: Manual Token Entry & Demo Helpers -->
     <div style="margin-top:8px;text-align:left;">
       <button type="button" id="manual-toggle-btn" class="link" style="background:none;border:none;color:var(--gray);font-size:0.8rem;font-weight:600;padding:6px 0;display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="toggleManualInput()">
-        <span id="manual-toggle-icon">▶</span> Manual Token / Fallback Options
+        <span id="manual-toggle-icon">▸</span> Manual Token / Fallback Options
       </button>
       
       <div id="manual-input-section" style="display:none;margin-top:10px;padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;">
@@ -656,9 +717,10 @@ input:focus,select:focus{outline:2px solid var(--blue);}
           <button class="btn btn-primary" id="scan-lookup-btn" style="width:auto;padding:0 16px;font-size:0.82rem;" onclick="lookupPatient()">Lookup</button>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;" onclick="simulateProviderScan()">⚡ Use Patient QR</button>
-          <label class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;">
-            📁 Upload QR Image
+          <button class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;display:inline-flex;align-items:center;justify-content:center;gap:5px;" onclick="simulateProviderScan()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Use Sample QR</button>
+          <label class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload QR Image
             <input type="file" id="qr-file-input-manual" accept="image/*" style="display:none" onchange="handleQrFileUpload(event)">
           </label>
         </div>
@@ -702,7 +764,9 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
 <section class="view" id="v-psent" data-title="Request Sent" data-nav="none">
   <div class="card center">
-    <div style="font-size:2.6rem">📨</div>
+    <div class="icon-hero" style="width:52px;height:52px;border-radius:10px;background:#ecfdf5;color:#16a34a;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h9"/><polyline points="22,6 12,13 2,6"/><polyline points="16 19 19 22 24 17"/></svg>
+    </div>
     <h2 class="title">Request Sent</h2>
     <p class="sub" id="psent-sub">The patient has been notified. You'll be able to view the approved information once access is granted.</p>
     <button class="btn btn-primary" style="margin-top:10px" onclick="go('v-pdash')">Back to Dashboard</button>
@@ -753,8 +817,9 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
 <section class="view" id="v-emerg-scan" data-title="Emergency QR Scanner" data-nav="none">
   <div class="card center" style="padding:22px 18px;">
-    <div style="display:inline-block;background:#fee2e2;color:#991b1b;font-weight:800;font-size:0.78rem;padding:4px 10px;border-radius:20px;margin-bottom:8px;">
-      🚨 EMERGENCY ACCESS MODE
+    <div style="display:inline-flex;align-items:center;gap:6px;background:#fee2e2;color:#991b1b;font-weight:700;font-size:0.75rem;padding:4px 10px;border-radius:6px;border:1px solid #fecaca;margin-bottom:8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#991b1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      EMERGENCY ACCESS MODE
     </div>
     <h2 class="title" style="color:#e11d48;margin-bottom:4px;">Scan Patient QR</h2>
     <p class="sub" style="margin-bottom:12px;">Point camera at patient's MedTrace QR passport for instant critical care info</p>
@@ -782,12 +847,15 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
       <!-- Error / Permission Denied Fallback UI -->
       <div id="emerg-scanner-error-box" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(9,13,22,0.96);padding:24px 20px;text-align:center;color:#fff;z-index:10;flex-direction:column;align-items:center;justify-content:center;">
-        <div style="font-size:2.2rem;margin-bottom:8px;">📷⚠️</div>
+        <div class="icon-hero" style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,0.08);color:#fca5a5;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
         <p id="emerg-scanner-error-msg" style="font-size:0.84rem;color:#fca5a5;line-height:1.45;margin-bottom:14px;max-width:260px;">Camera access was not granted.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
           <button class="btn btn-danger" id="emerg-btn-retry-camera" style="width:auto;padding:8px 16px;font-size:0.8rem;background:#e11d48;color:#fff;" onclick="startEmergencyQrScanner()">Retry Camera</button>
-          <label class="btn btn-outline" style="width:auto;padding:8px 16px;font-size:0.8rem;background:transparent;color:#f43f5e;border-color:#f43f5e!important;cursor:pointer;">
-            📁 Upload QR
+          <label class="btn btn-outline" style="width:auto;padding:8px 16px;font-size:0.8rem;background:transparent;color:#f43f5e;border-color:#f43f5e!important;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload QR
             <input type="file" id="emerg-qr-file-input" accept="image/*" style="display:none" onchange="handleEmergencyQrFileUpload(event)">
           </label>
         </div>
@@ -796,14 +864,14 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
     <!-- Scanner Action Controls -->
     <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button class="btn btn-outline" id="emerg-btn-toggle-camera" style="flex:1;padding:10px;font-size:0.82rem;" onclick="toggleEmergencyQrCamera()">🔄 Switch Camera</button>
-      <button class="btn btn-outline" id="emerg-btn-stop-camera" style="flex:1;padding:10px;font-size:0.82rem;" onclick="toggleEmergencyQrScanningState()">⏸ Pause Camera</button>
+      <button class="btn btn-outline" id="emerg-btn-toggle-camera" style="flex:1;padding:10px;font-size:0.82rem;display:inline-flex;align-items:center;justify-content:center;gap:6px;" onclick="toggleEmergencyQrCamera()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg> Switch Camera</button>
+      <button class="btn btn-outline" id="emerg-btn-stop-camera" style="flex:1;padding:10px;font-size:0.82rem;display:inline-flex;align-items:center;justify-content:center;gap:6px;" onclick="toggleEmergencyQrScanningState()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause Camera</button>
     </div>
 
     <!-- Secondary Fallback: Manual Token Entry & Demo Helpers -->
     <div style="margin-top:8px;text-align:left;">
       <button type="button" id="emerg-manual-toggle-btn" class="link" style="background:none;border:none;color:var(--gray);font-size:0.8rem;font-weight:600;padding:6px 0;display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="toggleEmergencyManualInput()">
-        <span id="emerg-manual-toggle-icon">▶</span> Manual Token / Fallback Options
+        <span id="emerg-manual-toggle-icon">▸</span> Manual Token / Fallback Options
       </button>
       
       <div id="emerg-manual-input-section" style="display:none;margin-top:10px;padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;">
@@ -813,9 +881,10 @@ input:focus,select:focus{outline:2px solid var(--blue);}
           <button class="btn btn-danger" id="emerg-lookup-btn" style="width:auto;padding:0 16px;font-size:0.82rem;background:#e11d48;color:#fff;" onclick="lookupEmergency()">Lookup</button>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;" onclick="simulateEmergencyScan()">⚡ Use Patient QR</button>
-          <label class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;">
-            📁 Upload QR Image
+          <button class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;display:inline-flex;align-items:center;justify-content:center;gap:5px;" onclick="simulateEmergencyScan()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Use Sample QR</button>
+          <label class="btn btn-outline" style="flex:1;font-size:0.78rem;padding:8px 6px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload QR Image
             <input type="file" id="emerg-qr-file-input-manual" accept="image/*" style="display:none" onchange="handleEmergencyQrFileUpload(event)">
           </label>
         </div>
@@ -828,7 +897,9 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
 <section class="view" id="v-emerg-consent" data-title="Emergency Access" data-nav="none">
   <div class="card center">
-    <div style="font-size:2.6rem">🚨</div>
+    <div class="icon-hero" style="width:52px;height:52px;border-radius:10px;background:#fee2e2;color:#dc2626;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
     <h2 class="title">The patient cannot provide consent</h2>
     <p class="sub">Emergency access provides critical medical information needed for immediate care. This access is logged by the backend and reviewable by the patient.</p>
     <button class="btn btn-danger" style="background:#e11d48;color:#fff;" onclick="lookupEmergency(state.scannedPatient ? state.scannedPatient.qr_token : '')">Continue to Emergency Information</button>
@@ -839,7 +910,10 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 <section class="view" id="v-emerg-info" data-title="Emergency Profile" data-nav="none">
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <span class="badge" style="background:#fee2e2;color:#991b1b;font-weight:800;font-size:0.8rem;padding:4px 10px;">🚨 EMERGENCY ACCESS</span>
+      <span class="badge" style="background:#fee2e2;color:#991b1b;font-weight:700;font-size:0.75rem;padding:4px 10px;border-radius:6px;border:1px solid #fecaca;display:inline-flex;align-items:center;gap:5px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        EMERGENCY ACCESS
+      </span>
       <span id="emerg-access-time" class="sub" style="margin:0;font-size:0.75rem;"></span>
     </div>
     
@@ -870,26 +944,26 @@ input:focus,select:focus{outline:2px solid var(--blue);}
           <span class="badge" id="emerg-blood-badge" style="background:#fee2e2;color:#991b1b;font-weight:800;font-size:0.95rem;padding:4px 12px;">Unknown</span>
         </div>
         <div class="divider" style="margin:8px 0;"></div>
-        <p class="section-title" style="margin:4px 0 6px 0;color:var(--blue);">📞 Emergency Contact</p>
+        <p class="section-title" style="margin:4px 0 6px 0;color:var(--blue);display:flex;align-items:center;gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Emergency Contact</p>
         <div id="emerg-contact-box">
           <p class="sub" style="margin:0;">None specified</p>
         </div>
       </div>
 
       <!-- Allergies -->
-      <p class="section-title" style="margin-top:14px;color:#b91c1c;font-weight:700;">⚠️ Allergies</p>
+      <p class="section-title" style="margin-top:14px;color:#b91c1c;font-weight:700;display:flex;align-items:center;gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Allergies</p>
       <div id="emerg-allergies-list"><p class="sub" style="margin:0">None reported</p></div>
 
       <!-- Current Medications -->
-      <p class="section-title" style="margin-top:14px;">💊 Active Medications</p>
+      <p class="section-title" style="margin-top:14px;display:flex;align-items:center;gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg> Active Medications</p>
       <div id="emerg-meds-list"><p class="sub" style="margin:0">None reported</p></div>
 
       <!-- Major Conditions -->
-      <p class="section-title" style="margin-top:14px;">🩺 Major Conditions</p>
+      <p class="section-title" style="margin-top:14px;display:flex;align-items:center;gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Major Conditions</p>
       <div id="emerg-conditions-list"><p class="sub" style="margin:0">None reported</p></div>
 
       <!-- Major Procedures -->
-      <p class="section-title" style="margin-top:14px;">🏥 Major Procedures</p>
+      <p class="section-title" style="margin-top:14px;display:flex;align-items:center;gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg> Major Procedures</p>
       <div id="emerg-procedures-list"><p class="sub" style="margin:0">None reported</p></div>
 
       <button class="btn btn-primary" id="emerg-done-btn" style="margin-top:20px" onclick="exitEmergencyFlow()">Done / Close</button>
@@ -900,7 +974,9 @@ input:focus,select:focus{outline:2px solid var(--blue);}
 
 <section class="view" id="v-emerg-done" data-title="Access Recorded" data-nav="none">
   <div class="card center">
-    <div style="font-size:2.6rem">✅</div>
+    <div class="icon-hero" style="width:52px;height:52px;border-radius:10px;background:#ecfdf5;color:#16a34a;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 10"/></svg>
+    </div>
     <h2 class="title">Emergency Access Logged</h2>
     <p class="sub" id="emerg-done-sub">Emergency access to this patient's critical medical profile was recorded by the backend and will be visible in their audit history.</p>
     <button class="btn btn-primary" onclick="exitEmergencyFlow()">Done</button>
@@ -1263,17 +1339,40 @@ async function handleLogin(event, expectedRole) {
   }
 }
 
+function getNavIcon(name) {
+  switch(name) {
+    case 'home':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+    case 'records':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`;
+    case 'qr':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`;
+    case 'emergency':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+    case 'history':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    case 'scan':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+    case 'requests':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`;
+    case 'logout':
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`;
+    default:
+      return '';
+  }
+}
+
 const PATIENT_NAV=[
-  ['v-dash','🏠','Dashboard'],['v-profile','📋','Medical Profile'],
-  ['v-created','▦','My QR Code'],['v-emerg2','🚨','Emergency Profile'],
-  ['v-history','🕘','Access History']
+  ['v-dash','home','Dashboard'],['v-profile','records','Medical Profile'],
+  ['v-created','qr','My QR Code'],['v-emerg2','emergency','Emergency Profile'],
+  ['v-history','history','Access History']
 ];
 const PROVIDER_NAV=[
-  ['v-pdash','🏠','Dashboard'],
-  ['v-scan','📷','Scan QR'],
-  ['v-emerg-scan','🚨','Emergency Scan'],
-  ['v-preq','📥','Access Requests'],
-  ['v-pdash','🕘','Access History']
+  ['v-pdash','home','Dashboard'],
+  ['v-scan','scan','Scan QR'],
+  ['v-emerg-scan','emergency','Emergency Scan'],
+  ['v-preq','requests','Access Requests'],
+  ['v-pdash','history','Access History']
 ];
 
 function buildNav(){
@@ -1297,16 +1396,16 @@ function buildNav(){
   const mobileSwitchBtn = document.getElementById('mobileSwitchRoleBtn');
   if (mobileSwitchBtn) {
     const target = state.role === 'patient' ? 'Provider' : 'Patient';
-    mobileSwitchBtn.textContent = `⇄ Switch to ${target}`;
+    mobileSwitchBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg> Switch to ${target}`;
     mobileSwitchBtn.title = isAuth ? `Switch to ${target} Portal (Log out)` : `Switch to ${target} Portal`;
   }
 
-  let navHtml = items.map(i=>`<a onclick="handleNavClick('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
+  let navHtml = items.map(i=>`<a onclick="handleNavClick('${i[0]}')" data-target="${i[0]}"><span>${getNavIcon(i[1])}</span>${i[2]}</a>`).join('');
   if (isAuth) {
-    navHtml += `<a onclick="logout()" style="color:#ef4444;margin-top:14px;cursor:pointer"><span>🚪</span>Log out</a>`;
+    navHtml += `<a onclick="logout()" style="color:#ef4444;margin-top:14px;cursor:pointer"><span>${getNavIcon('logout')}</span>Log out</a>`;
   }
   document.getElementById('sidebarNav').innerHTML = navHtml;
-  document.getElementById('bottomnav').innerHTML = items.map(i=>`<a onclick="handleNavClick('${i[0]}')" data-target="${i[0]}"><span>${i[1]}</span>${i[2]}</a>`).join('');
+  document.getElementById('bottomnav').innerHTML = items.map(i=>`<a onclick="handleNavClick('${i[0]}')" data-target="${i[0]}"><span>${getNavIcon(i[1])}</span>${i[2]}</a>`).join('');
 }
 
 function handleNavClick(id) {
@@ -1601,7 +1700,7 @@ function renderRecordsUI(data) {
       pfAllergies.innerHTML = allergies.map(a => {
         const name = a.name || a.allergen;
         const reaction = a.reaction || a.severity;
-        return `<span class="chip" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;font-weight:600">⚠️ ${name}${reaction ? ' (' + reaction + ')' : ''}</span>`;
+        return `<span class="chip" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;font-weight:600;display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${name}${reaction ? ' (' + reaction + ')' : ''}</span>`;
       }).join('');
     } else {
       pfAllergies.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
@@ -1617,7 +1716,7 @@ function renderRecordsUI(data) {
         const name = m.name;
         const dose = m.dosage ? ' - ' + m.dosage : '';
         const freq = m.frequency ? ' (' + m.frequency + ')' : '';
-        return `<span class="chip" style="background:#e0f2fe;border-color:#bae6fd;color:#0369a1;font-weight:600">💊 ${name}${dose}${freq}</span>`;
+        return `<span class="chip" style="background:#e0f2fe;border-color:#bae6fd;color:#0369a1;font-weight:600;display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>${name}${dose}${freq}</span>`;
       }).join('');
     } else {
       pfMeds.innerHTML = '<p class="sub" style="margin:0">None reported</p>';
@@ -1652,7 +1751,7 @@ function renderRecordsUI(data) {
       emAllergies.innerHTML = allergies.map(a => {
         const name = a.name || a.allergen;
         const reaction = a.reaction || a.severity;
-        return `<p>⚠️ ${name}${reaction ? ' (' + reaction + ')' : ''}</p>`;
+        return `<p style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${name}${reaction ? ' (' + reaction + ')' : ''}</p>`;
       }).join('');
     } else {
       emAllergies.innerHTML = '<p>None reported</p>';
@@ -1668,7 +1767,7 @@ function renderRecordsUI(data) {
         const name = m.name;
         const dose = m.dosage ? ' ' + m.dosage : '';
         const freq = m.frequency ? ' (' + m.frequency + ')' : '';
-        return `<p>💊 ${name}${dose}${freq}</p>`;
+        return `<p style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>${name}${dose}${freq}</p>`;
       }).join('');
     } else {
       emMeds.innerHTML = '<p>None reported</p>';
@@ -1767,7 +1866,7 @@ async function lookupPatient(customToken) {
       state.scannedPatient = { ...data, qr_token: token };
       localStorage.setItem('medtrace_last_qr_token', token);
       renderScannedPatientUI(state.scannedPatient);
-      toast(`✓ Patient found: ${data.patient_name}`);
+      toast(`Patient found: ${data.patient_name}`);
       go('v-pfound');
     }
   } catch (err) {
@@ -1933,7 +2032,7 @@ async function stopQrScanner() {
 
   if (statusEl) statusEl.textContent = 'Camera paused';
   if (statusContainer) statusContainer.style.color = 'var(--gray)';
-  if (stopBtn) stopBtn.textContent = '▶ Start Camera';
+  if (stopBtn) stopBtn.textContent = 'Start Camera';
 }
 
 /**
@@ -1970,7 +2069,7 @@ function handleCameraError(err) {
 
   if (overlay) overlay.style.display = 'none';
   if (errorBox) errorBox.style.display = 'flex';
-  if (stopBtn) stopBtn.textContent = '▶ Start Camera';
+  if (stopBtn) stopBtn.textContent = 'Start Camera';
 
   let friendlyMsg = 'Camera access could not be established.';
   const raw = String(err && (err.message || err)).toLowerCase();
@@ -1995,7 +2094,7 @@ function handleCameraError(err) {
   const manualSec = document.getElementById('manual-input-section');
   const manualIcon = document.getElementById('manual-toggle-icon');
   if (manualSec) manualSec.style.display = 'block';
-  if (manualIcon) manualIcon.textContent = '▼';
+  if (manualIcon) manualIcon.textContent = '▾';
 }
 
 /**
@@ -2017,10 +2116,10 @@ async function onQrScanSuccess(decodedText, decodedResult) {
 
   const statusEl = document.getElementById('scanner-status-text');
   const statusContainer = document.getElementById('scanner-status');
-  if (statusEl) statusEl.textContent = '✓ QR Code detected! Looking up patient...';
+  if (statusEl) statusEl.textContent = 'QR Code detected. Looking up patient...';
   if (statusContainer) statusContainer.style.color = '#16a34a';
 
-  toast('✓ QR detected! Fetching patient details...');
+  toast('QR detected. Fetching patient details...');
 
   // Stop camera immediately upon successful scan
   await stopQrScanner();
@@ -2073,7 +2172,7 @@ function toggleManualInput() {
   if (!sec) return;
   const isHidden = sec.style.display === 'none' || !sec.style.display;
   sec.style.display = isHidden ? 'block' : 'none';
-  if (icon) icon.textContent = isHidden ? '▼' : '▶';
+  if (icon) icon.textContent = isHidden ? '▾' : '▸';
 }
 
 /**
@@ -2139,7 +2238,7 @@ async function submitAccessRequest() {
       if (psentSub) {
         psentSub.textContent = `${patientName} has been notified. You will be able to view their medical information once access is granted.`;
       }
-      toast(`✓ Access request sent to ${patientName}`);
+      toast(`Access request sent to ${patientName}`);
       loadProviderDashboard();
       go('v-psent');
     }
@@ -2291,7 +2390,7 @@ async function respondRequest(requestId, approved) {
       body: JSON.stringify({ approved })
     });
     if (updated) {
-      toast(approved ? '✓ Access request approved' : 'Access request rejected');
+      toast(approved ? 'Access request approved' : 'Access request rejected');
       if (Array.isArray(state.accessRequests)) {
         const idx = state.accessRequests.findIndex(r => r.id === requestId);
         if (idx !== -1) {
@@ -2355,7 +2454,7 @@ function renderProviderPatientRecordsError(errorMessage) {
 
   const errorEl = document.getElementById('pv-error');
   if (errorEl) {
-    errorEl.textContent = `⚠️ Access Restricted: ${errorMessage}`;
+    errorEl.textContent = `Access Restricted: ${errorMessage}`;
     errorEl.style.display = 'block';
   }
 
@@ -2637,7 +2736,7 @@ function renderEmergencyError(errorMessage) {
 
   const errorEl = document.getElementById('emerg-error');
   if (errorEl) {
-    errorEl.textContent = `⚠️ Emergency Record Not Found: ${errorMessage}`;
+    errorEl.textContent = `Emergency Record Not Found: ${errorMessage}`;
     errorEl.style.display = 'block';
   }
 
@@ -2695,7 +2794,7 @@ function renderEmergencyInfoUI(data) {
     const allergies = rawAllergies.filter(a => a && (a.name || a.allergen));
     if (allergies.length > 0) {
       const listStr = allergies.map(a => `${a.name || a.allergen}${a.reaction ? ' (' + a.reaction + ')' : (a.severity ? ' (' + a.severity + ')' : '')}`).join(', ');
-      allergyBanner.innerHTML = `⚠️ CRITICAL ALLERGIES DETECTED: <b>${listStr}</b>`;
+      allergyBanner.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> CRITICAL ALLERGIES DETECTED:</span> <b>${listStr}</b>`;
       allergyBanner.style.display = 'block';
     } else {
       allergyBanner.style.display = 'none';
@@ -2714,7 +2813,7 @@ function renderEmergencyInfoUI(data) {
             <b>${cName || 'Next of Kin / Contact'}</b><br>
             <span class="sub" style="margin:0">${cPhone || 'No phone provided'}</span>
           </div>
-          ${cPhone ? `<a href="tel:${cPhone}" class="btn btn-primary" style="display:inline-block;width:auto;padding:6px 16px;text-decoration:none;font-size:0.85rem;">📞 Call Now</a>` : ''}
+          ${cPhone ? `<a href="tel:${cPhone}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;width:auto;padding:7px 16px;text-decoration:none;font-size:0.85rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Call Now</a>` : ''}
         </div>
       `;
     } else {
@@ -2732,8 +2831,8 @@ function renderEmergencyInfoUI(data) {
         const name = a.name || a.allergen;
         const reaction = a.reaction || a.severity;
         return `
-          <span class="chip" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;font-weight:700;margin-right:6px;margin-bottom:6px;display:inline-block;">
-            ⚠️ ${name}${reaction ? ' (' + reaction + ')' : ''}
+          <span class="chip" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;font-weight:700;margin-right:6px;margin-bottom:6px;display:inline-flex;align-items:center;gap:5px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${name}${reaction ? ' (' + reaction + ')' : ''}
           </span>
         `;
       }).join('');
@@ -2749,8 +2848,8 @@ function renderEmergencyInfoUI(data) {
     const meds = rawMeds.filter(m => m && m.name);
     if (meds.length > 0) {
       medsList.innerHTML = meds.map(m => `
-        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-block;">
-          💊 ${m.name}${m.dosage ? ' ' + m.dosage : ''}${m.frequency ? ' (' + m.frequency + ')' : ''}
+        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-flex;align-items:center;gap:5px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg> ${m.name}${m.dosage ? ' ' + m.dosage : ''}${m.frequency ? ' (' + m.frequency + ')' : ''}
         </span>
       `).join('');
     } else {
@@ -2764,8 +2863,8 @@ function renderEmergencyInfoUI(data) {
     const conds = Array.isArray(data.major_conditions) ? data.major_conditions : [];
     if (conds.length > 0) {
       condsList.innerHTML = conds.map(c => `
-        <span class="chip" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;font-weight:700;margin-right:6px;margin-bottom:6px;display:inline-block;">
-          🩺 ${c.name || 'Condition'}${c.diagnosed_date ? ' (' + c.diagnosed_date + ')' : ''}
+        <span class="chip" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;font-weight:700;margin-right:6px;margin-bottom:6px;display:inline-flex;align-items:center;gap:5px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> ${c.name || 'Condition'}${c.diagnosed_date ? ' (' + c.diagnosed_date + ')' : ''}
         </span>
       `).join('');
     } else {
@@ -2779,8 +2878,8 @@ function renderEmergencyInfoUI(data) {
     const procs = Array.isArray(data.major_procedures) ? data.major_procedures : [];
     if (procs.length > 0) {
       procsList.innerHTML = procs.map(p => `
-        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-block;">
-          🏥 ${p.name || 'Procedure'}${p.performed_on ? ' (' + p.performed_on + ')' : ''}${p.facility ? ' @ ' + p.facility : ''}
+        <span class="chip" style="margin-right:6px;margin-bottom:6px;display:inline-flex;align-items:center;gap:5px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg> ${p.name || 'Procedure'}${p.performed_on ? ' (' + p.performed_on + ')' : ''}${p.facility ? ' @ ' + p.facility : ''}
         </span>
       `).join('');
     } else {
@@ -2827,7 +2926,7 @@ async function lookupEmergency(customToken) {
     state.emergencyProfile = data;
     renderEmergencyInfoUI(data);
     setEmergencyLoading(false);
-    toast(`✓ Emergency profile retrieved: ${data.patient_name || 'Patient'}`);
+    toast(`Emergency profile retrieved: ${data.patient_name || 'Patient'}`);
   } catch (err) {
     console.error('Emergency lookup error:', err);
     state.emergencyToken = '';
@@ -2895,7 +2994,7 @@ async function startEmergencyQrScanner() {
 
   // If already active, do not re-initialize
   if (isEmergencyScannerActive && html5EmergencyQrScanner) {
-    if (statusEl) statusEl.textContent = '● Emergency Camera active — point at patient QR';
+    if (statusEl) statusEl.textContent = 'Emergency camera active — point at patient QR';
     if (statusContainer) statusContainer.style.color = '#16a34a';
     return;
   }
@@ -2931,9 +3030,9 @@ async function startEmergencyQrScanner() {
     );
 
     isEmergencyScannerActive = true;
-    if (statusEl) statusEl.textContent = '● Emergency Camera active — point at patient QR';
+    if (statusEl) statusEl.textContent = 'Emergency camera active — point at patient QR';
     if (statusContainer) statusContainer.style.color = '#16a34a';
-    if (stopBtn) stopBtn.textContent = '⏸ Pause Camera';
+    if (stopBtn) stopBtn.textContent = 'Pause Camera';
   } catch (err) {
     console.warn('Emergency camera scanner error:', err);
     handleEmergencyCameraError(err);
@@ -2959,7 +3058,7 @@ async function stopEmergencyQrScanner() {
 
   if (statusEl) statusEl.textContent = 'Camera paused';
   if (statusContainer) statusContainer.style.color = 'var(--gray)';
-  if (stopBtn) stopBtn.textContent = '▶ Start Camera';
+  if (stopBtn) stopBtn.textContent = 'Start Camera';
 }
 
 /**
@@ -2996,7 +3095,7 @@ function handleEmergencyCameraError(err) {
 
   if (overlay) overlay.style.display = 'none';
   if (errorBox) errorBox.style.display = 'flex';
-  if (stopBtn) stopBtn.textContent = '▶ Start Camera';
+  if (stopBtn) stopBtn.textContent = 'Start Camera';
 
   let friendlyMsg = 'Emergency camera access could not be established.';
   const raw = String(err && (err.message || err)).toLowerCase();
@@ -3020,7 +3119,7 @@ function handleEmergencyCameraError(err) {
   const manualSec = document.getElementById('emerg-manual-input-section');
   const manualIcon = document.getElementById('emerg-manual-toggle-icon');
   if (manualSec) manualSec.style.display = 'block';
-  if (manualIcon) manualIcon.textContent = '▼';
+  if (manualIcon) manualIcon.textContent = '▾';
 }
 
 /**
@@ -3041,10 +3140,10 @@ async function onEmergencyQrScanSuccess(decodedText, decodedResult) {
 
   const statusEl = document.getElementById('emerg-scanner-status-text');
   const statusContainer = document.getElementById('emerg-scanner-status');
-  if (statusEl) statusEl.textContent = '✓ Emergency QR detected! Loading profile...';
+  if (statusEl) statusEl.textContent = 'Emergency QR detected. Loading profile...';
   if (statusContainer) statusContainer.style.color = '#16a34a';
 
-  toast('🚨 Emergency QR detected! Fetching critical profile...');
+  toast('Emergency QR detected. Fetching critical profile...');
 
   await stopEmergencyQrScanner();
 
@@ -3094,7 +3193,7 @@ function toggleEmergencyManualInput() {
   if (!sec) return;
   const isHidden = sec.style.display === 'none' || !sec.style.display;
   sec.style.display = isHidden ? 'block' : 'none';
-  if (icon) icon.textContent = isHidden ? '▼' : '▶';
+  if (icon) icon.textContent = isHidden ? '▾' : '▸';
 }
 
 async function loadPatientProfile(){
@@ -3161,7 +3260,7 @@ async function saveP1(){
       state.profile.qr_token = updated.qr_token;
       localStorage.setItem('medtrace_last_qr_token', updated.qr_token);
     }
-    toast('✓ Personal details saved');
+    toast('Personal details saved');
     go('v-ob2');
   } catch (err) {
     toast(err.message || 'Failed to save profile');
@@ -3193,7 +3292,7 @@ async function addCondition(){
       body: JSON.stringify({ name: val, is_major: true })
     });
     state.savedConditions.add(val);
-    toast(`✓ Condition "${val}" saved to backend`);
+    toast(`Condition "${val}" saved`);
   } catch (err) {
     toast(err.message || 'Failed to save condition');
   } finally {
@@ -3211,7 +3310,7 @@ function toggleAddAllergy(show) {
   if (!box) return;
   const isOpening = show !== undefined ? Boolean(show) : (box.style.display === 'none' || !box.style.display);
   box.style.display = isOpening ? 'block' : 'none';
-  if (link) link.textContent = isOpening ? '✕ Close' : '+ Add Allergy';
+  if (link) link.textContent = isOpening ? 'Close' : '+ Add Allergy';
   if (isOpening) {
     const inp = document.getElementById('new-allergy-name');
     if (inp) setTimeout(() => inp.focus(), 50);
@@ -3226,7 +3325,7 @@ function toggleAddMedication(show) {
   if (!box) return;
   const isOpening = show !== undefined ? Boolean(show) : (box.style.display === 'none' || !box.style.display);
   box.style.display = isOpening ? 'block' : 'none';
-  if (link) link.textContent = isOpening ? '✕ Close' : '+ Add Medication';
+  if (link) link.textContent = isOpening ? 'Close' : '+ Add Medication';
   if (isOpening) {
     const inp = document.getElementById('new-med-name');
     if (inp) setTimeout(() => inp.focus(), 50);
@@ -3281,7 +3380,7 @@ async function submitAddAllergy() {
     toggleAddAllergy(false);
 
     renderRecordsUI(state.records);
-    toast(`✓ Allergy "${name}" added successfully`);
+    toast(`Allergy "${name}" added successfully`);
 
     // Silently refresh authoritative records from server
     loadPatientRecords();
@@ -3353,7 +3452,7 @@ async function submitAddMedication() {
     toggleAddMedication(false);
 
     renderRecordsUI(state.records);
-    toast(`✓ Medication "${name}" added successfully`);
+    toast(`Medication "${name}" added successfully`);
 
     // Silently refresh authoritative records from server
     loadPatientRecords();
@@ -3399,7 +3498,7 @@ async function addObAllergy() {
     state.allergies.push(item);
     state.savedAllergies.add(name);
     renderChips('ob-allergy-list', state.allergies.map(a => `${a.name || a.allergen || 'Allergy'}${a.reaction ? ' (' + a.reaction + ')' : ''}`));
-    toast(`✓ Allergy "${name}" saved`);
+    toast(`Allergy "${name}" saved`);
   } catch (err) {
     toast(err.message || 'Failed to save allergy');
   } finally {
@@ -3433,7 +3532,7 @@ async function addObMedication() {
     state.medications.push(item);
     state.savedMedications.add(name);
     renderChips('ob-med-list', state.medications.map(m => `${m.name || 'Medication'}${m.dosage ? ' - ' + m.dosage : ''}`));
-    toast(`✓ Medication "${name}" saved`);
+    toast(`Medication "${name}" saved`);
   } catch (err) {
     toast(err.message || 'Failed to save medication');
   } finally {
@@ -3479,7 +3578,7 @@ async function saveP2(){
         state.savedConditions.add(c);
       }
     }
-    toast('✓ Medical details saved');
+    toast('Medical details saved');
     go('v-ob3');
   } catch (err) {
     toast(err.message || 'Failed to save conditions');
@@ -3523,7 +3622,7 @@ async function addProcedure(){
       })
     });
     state.savedProcedures.add(val);
-    toast(`✓ Procedure "${procName}" saved to backend`);
+    toast(`Procedure "${procName}" saved`);
   } catch (err) {
     toast(err.message || 'Failed to save procedure');
   } finally {
@@ -3570,7 +3669,7 @@ async function saveP3(){
         state.savedProcedures.add(p);
       }
     }
-    toast('✓ Previous procedures saved');
+    toast('Previous procedures saved');
     go('v-review');
   } catch (err) {
     toast(err.message || 'Failed to save procedures');
@@ -3604,7 +3703,7 @@ async function confirmPassport(){
         localStorage.setItem('medtrace_last_qr_token', updated.qr_token);
       }
     }
-    toast('✓ MedTrace Passport created: ' + (state.profile.passport_id || ''));
+    toast('MedTrace Passport created: ' + (state.profile.passport_id || ''));
     go('v-created');
   } catch (err) {
     toast(err.message || 'Created MedTrace Passport');
